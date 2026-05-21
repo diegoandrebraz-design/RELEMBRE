@@ -6,7 +6,7 @@ cv::Mat Render::render(const cv::Mat& arquivo, int escolha, double alfa, double 
     imagem = arquivo.clone();
 
     if (arquivo.empty()) {
-        std::cerr << "Erro: O arquivo de mídia fornecido está vazio ou não pôde ser aberto!" << std::endl;
+        std::cerr << "Erro ao tentar abrir o arquivo!" << std::endl;
         return arquivo;
     }
 
@@ -24,11 +24,11 @@ cv::Mat Render::render(const cv::Mat& arquivo, int escolha, double alfa, double 
             case 5: resultado = remover(imagem, alfa); break;
             case 6: resultado = contraste(imagem, alfa); break;
             case 7: resultado = brilho(imagem, alfa); break;
-            case 8: resultado = cores(imagem, alfa, beta); break; // Atualizado para passar alfa e beta
+            case 8: resultado = cores(imagem, alfa, beta); break;
             case 9: resultado = nitidez(imagem, alfa); break;
             case 10: resultado = cinzas(imagem, alfa); break;
             default:
-                std::cout << "Opção invalida. Mantendo arquivo original.\n";
+                std::cout << "Opção invalida!\n";
                 resultado = imagem.clone();
                 break;
         }
@@ -160,9 +160,9 @@ cv::Mat Render::cores(const cv::Mat& arquivo, double alfa, double beta) {
     std::vector<cv::Mat> canais;
     cv::split(arquivo, canais);
 
-    if (cor == 1)      { canais[0] = canais[0] * alfa; } // Azul
-    else if (cor == 2) { canais[1] = canais[1] * alfa; } // Verde
-    else if (cor == 3) { canais[2] = canais[2] * alfa; } // Vermelho
+    if (cor == 1)      { canais[0] = canais[0] * alfa; }
+    else if (cor == 2) { canais[1] = canais[1] * alfa; }
+    else if (cor == 3) { canais[2] = canais[2] * alfa; }
 
     cv::merge(canais, resultado);
     return resultado;
@@ -199,7 +199,7 @@ Render::Render(const std::string& arquivo) {
     leitor.open(arquivo);
 
     if (!leitor.isOpened()) {
-        std::cout << "Erro ao abrir o arquivo" << std::endl;
+        std::cout << "Erro ao tentar abrir o arquivo" << std::endl;
     }
     assert(leitor.isOpened());
     pausar = false;
