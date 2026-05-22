@@ -2,11 +2,11 @@
 #include <cassert>
 #include <iostream>
 
-cv::Mat Render::render(const cv::Mat& arquivo, int escolha, double alfa, double beta) {
+cv::Mat Render::render(const cv::Mat& arquivo, int escolha, double alfa, float beta, int gama, int delta) {
     imagem = arquivo.clone();
 
     if (arquivo.empty()) {
-        std::cerr << "Erro ao tentar abrir o arquivo!" << std::endl;
+        std::cerr << "Erro ao abrir o arquivo!" << std::endl;
         return arquivo;
     }
 
@@ -17,18 +17,18 @@ cv::Mat Render::render(const cv::Mat& arquivo, int escolha, double alfa, double 
         }
 
         switch (escolha) {
-            case 1: resultado = girar(imagem, alfa); break;
-            case 2: resultado = recortar(imagem, alfa, beta); break;
-            case 3: resultado = desfocar(imagem, alfa); break;
-            case 4: resultado = limpar(imagem, alfa); break;
-            case 5: resultado = remover(imagem, alfa); break;
-            case 6: resultado = contraste(imagem, alfa); break;
+            case 1: resultado = girar(imagem, alfa, gama); break;
+            case 2: resultado = recortar(imagem, gama, delta); break;
+            case 3: resultado = nitidez(imagem, alfa); break;
+            case 4: resultado = desfocar(imagem, gama); break;
+            case 5: resultado = remover(imagem, gama); break;
+            case 6: resultado = limpar(imagem, beta); break;
             case 7: resultado = brilho(imagem, alfa); break;
-            case 8: resultado = cores(imagem, alfa, beta); break;
-            case 9: resultado = nitidez(imagem, alfa); break;
+            case 8: resultado = contraste(imagem, alfa); break;
+            case 9: resultado = cores(imagem, alfa, gama); break;
             case 10: resultado = cinzas(imagem, alfa); break;
             default:
-                std::cout << "Opção invalida!\n";
+                std::cout << "Opção invalida. Mantendo arquivo original.\n";
                 resultado = imagem.clone();
                 break;
         }
@@ -63,42 +63,60 @@ cv::Mat Render::render(const cv::Mat& arquivo, int escolha, double alfa, double 
     return resultado;
 }
 
-cv::Mat Render::girar(const cv::Mat& arquivo, double alfa) {
-    cv::Point2f centro(arquivo.cols / 2.0f, arquivo.rows / 2.0f);
+cv::Mat Render::girar(const cv::Mat& arquivo, double alfa, int gama) {
+    
+    cv::Point2f centro(static_cast<float>(arquivo.cols) / 2.0f, static_cast<float>(arquivo.rows) / 2.0f);
     cv::Mat rotacao = cv::getRotationMatrix2D(centro, alfa, 1.0);
+
     cv::warpAffine(arquivo, resultado, rotacao, arquivo.size());
 
+    if (gama == 1 || gama == 0 || gama == -1) {
+        cv::flip(resultado, resultado, gama);
+    }
     return resultado;
 }
 
-cv::Mat Render::recortar(const cv::Mat& arquivo, double alfa, double beta) {
-    static int x = -1, y = -1;
+cv::Mat Render::recortar(const cv::Mat& arquivo, int gama, int delta) {
+    static int esquerda = -1, topo = -1;
 
-    int largura = static_cast<int>(alfa);
-    int altura = static_cast<int>(beta);
+    int largura = gama;
+    int altura = delta;
 
-    if (x == -1 && y == -1) {
+    if (esquerda == -1 && topo == -1) {
         std::cout << "\n CORTE DE IMAGEM \n";
         std::cout << "As dimensões atuais são: " << arquivo.cols << "x" << arquivo.rows << "\n";
 
         std::cout << "Digite o ponto horizontal inicial (da esquerda para a direita): ";
-        std::cin >> x;
+        std::cin >> esquerda;
         std::cout << "Digite o ponto vertical inicial (de cima para baixo): ";
-        std::cin >> y;
+        std::cin >> topo;
     }
-    if (x < 0) { x = 0; }
-    if (y < 0) { y = 0; }
-    if (x + largura > arquivo.cols) { largura = arquivo.cols - x; }
-    if (y + altura > arquivo.rows)  { altura = arquivo.rows - y; }
+    if (esquerda < 0) { esquerda = 0; }
+    if (topo < 0) { topo = 0; }
+    if (esquerda + largura > arquivo.cols) { largura = arquivo.cols - esquerda; }
+    if (topo + altura > arquivo.rows)  { altura = arquivo.rows - topo; }
 
-    cv::Rect areaCorte(x, y, largura, altura);
+    cv::Rect areaCorte(esquerda, topo, largura, altura);
     resultado = arquivo(areaCorte).clone();
 
     return resultado;
 }
 
-cv::Mat Render::desfocar(const cv::Mat& arquivo, double alfa) {
-    int ksize = static_cast<int>(alfa);
+cv::Mat Render::nitidez(const cv::Mat& arquivo, double alfa) {
+    if (alfa < 0.0)   { alfa = 0.0; }
+    if (alfa > 100.0) { alfa = 100.0; }
+
+    alfa = (alfa - 50.0) / 25.0;
+
+    cv::Mat epsilon;
+    cv::GaussianBlur(arquivo, epsilon, cv::Size(3, 3), 0);
+    cv::addWeighted(arquivo, 1.0 + alfa, epsilon, -alfa, 0, resultado);
+
+    return resultado;
+}
+
+cv::Mat Render::desfocar(const cv::Mat& arquivo, int gama){
+    int ksize = gama;
 
     if (ksize <= 0) {
         ksize = 1;
@@ -111,32 +129,21 @@ cv::Mat Render::desfocar(const cv::Mat& arquivo, double alfa) {
     return resultado;
 }
 
-cv::Mat Render::limpar(const cv::Mat& arquivo, double alfa) {
-    float intensidade = static_cast<float>(alfa);
+cv::Mat Render::remover(const cv::Mat& arquivo, int gama) {
 
-    if (intensidade > 10.0f) { intensidade = 10.0f; }
-    if (intensidade < 0.0f)  { intensidade = 0.0f; }
+    if (gama < 3)     { gama = 3; }
+    if (gama % 2 == 0){ gama += 1; }
 
-    cv::fastNlMeansDenoisingColored(arquivo, resultado, intensidade, intensidade, 7, 21);
+    cv::medianBlur(arquivo, resultado, gama);
     return resultado;
 }
 
-cv::Mat Render::remover(const cv::Mat& arquivo, double alfa) {
-    int tamanho = static_cast<int>(alfa);
+cv::Mat Render::limpar(const cv::Mat& arquivo, float beta) {
 
-    if (tamanho < 3)     { tamanho = 3; }
-    if (tamanho % 2 == 0){ tamanho += 1; }
+    if (beta > 10.0f) { beta = 10.0f; }
+    if (beta < 0.0f)  { beta = 0.0f; }
 
-    cv::medianBlur(arquivo, resultado, tamanho);
-    return resultado;
-}
-
-cv::Mat Render::contraste(const cv::Mat& arquivo, double alfa) {
-    if (alfa < 0.0)   { alfa = 0.0; }
-    if (alfa > 100.0) { alfa = 100.0; }
-
-    alfa = alfa / 50.0;
-    arquivo.convertTo(resultado, -1, alfa, 0);
+    cv::fastNlMeansDenoisingColored(arquivo, resultado, beta, beta, 7, 21);
     return resultado;
 }
 
@@ -149,8 +156,18 @@ cv::Mat Render::brilho(const cv::Mat& arquivo, double alfa) {
     return resultado;
 }
 
-cv::Mat Render::cores(const cv::Mat& arquivo, double alfa, double beta) {
-    int cor = static_cast<int>(beta);
+cv::Mat Render::contraste(const cv::Mat& arquivo, double alfa) {
+    if (alfa < 0.0)   { alfa = 0.0; }
+    if (alfa > 100.0) { alfa = 100.0; }
+
+    alfa = alfa / 50.0;
+    arquivo.convertTo(resultado, -1, alfa, 0);
+    return resultado;
+}
+
+
+
+cv::Mat Render::cores(const cv::Mat& arquivo, double alfa, int gama) {
 
     if (alfa < 0.0)   { alfa = 0.0; }
     if (alfa > 100.0) { alfa = 100.0; }
@@ -160,24 +177,11 @@ cv::Mat Render::cores(const cv::Mat& arquivo, double alfa, double beta) {
     std::vector<cv::Mat> canais;
     cv::split(arquivo, canais);
 
-    if (cor == 1)      { canais[0] = canais[0] * alfa; }
-    else if (cor == 2) { canais[1] = canais[1] * alfa; }
-    else if (cor == 3) { canais[2] = canais[2] * alfa; }
+    if (gama == 1)      { canais[0] = canais[0] * alfa; }
+    else if (gama == 2) { canais[1] = canais[1] * alfa; }
+    else if (gama == 3) { canais[2] = canais[2] * alfa; }
 
     cv::merge(canais, resultado);
-    return resultado;
-}
-
-cv::Mat Render::nitidez(const cv::Mat& arquivo, double alfa) {
-    if (alfa < 0.0)   { alfa = 0.0; }
-    if (alfa > 100.0) { alfa = 100.0; }
-
-    alfa = (alfa - 50.0) / 25.0;
-
-    cv::Mat gama;
-    cv::GaussianBlur(arquivo, gama, cv::Size(3, 3), 0);
-    cv::addWeighted(arquivo, 1.0 + alfa, gama, -alfa, 0, resultado);
-
     return resultado;
 }
 
@@ -199,7 +203,7 @@ Render::Render(const std::string& arquivo) {
     leitor.open(arquivo);
 
     if (!leitor.isOpened()) {
-        std::cout << "Erro ao tentar abrir o arquivo" << std::endl;
+        std::cout << "Erro ao abrir o arquivo" << std::endl;
     }
     assert(leitor.isOpened());
     pausar = false;
