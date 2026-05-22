@@ -2,31 +2,53 @@
 #include <opencv2/opencv.hpp>
 #include "../include/render.h"
 
-int main()
-{
-    Render RELEMBRE;
-    std::string arquivo;
-    std::cout<<"Agora, me diga o endereço seu arquivo está salvo";
-    std::getline(std::cin,arquivo);
+int main(int argc, char** argv){
+    std::string entrada;
+    int opcao;
 
-    int escolha = 0;
-    std::cout<<"\nSelecione a opção desejada:";
-    std::cout<<"1 - Alinhar\n";
-    std::cout<<"2 - Recortar\n"; \\gaussian
-    std::cout<<"3 - Aplicar Desfoque\n"; \\balanço de brancos
-    std::cout<<"4 - Reduzir os Ruídos\n"; \\clahe
-    std::cout<<"5 - Disfarçar as Falhas\n"; \\ filtro bilateral
-    std::cout<<"6 - Ajustar o Contraste\n"; \\ inpainting
-    std::cout<<"7 - Balancear a Iluminação\n";
-    std::cout<<"8 - Correção de Cores\n";
-    std::cout<<"9 - Ganho de Nitidez\n";
-    std::cout<<"10 - Tons de Cinza\n";
+std::cout << "Resgate. Restaure. Relembre" << std::endl;
+std::cout << "[1] Abrir um arquivo de mídia" << std::endl;
+std::Cout << "[2] Sincronizar a Webcam" << std::endl;
+std::cout << "Escolha uma opção, digite 1 ou 2" << std::endl;
 
+std::cout << "Opção: ";
+std::cin >> opcao;
 
-
-    if (!arquivo.empty()) && (arquivo.front()=='"')
+if opcao == 1 {
+    std::cout << "Informe o caminho do arquivo: ";
+    std::cin >> entrada;
 }
-{Onde encontro o arquivo que deseja editar? Digite o caminho de uma imagem ou video
+    else if opcao == 2 {
+    entrada = "0";
+    std::cout << "Acessando a Webcam..." << std::endl;
+}
+    else {
+    std::cout << "Opção inválida" << std::endl;
 
-    return 0;
+return -1;
+    }
+
+Render processador(entrada);
+
+std::cout << "Processador de Mídia" << std::endl;
+std::cout << "Escolha o filtro desejado: " << std::endl;
+    std::cout << "1. Girar e Inverter" << std::endl;
+    std::cout << "2. Recortar" << std::endl;
+    std::cout << "3. Desfocar" << std::endl;
+    std::cout << "4. Reduzir Ruídos" << std::endl;
+    std::cout << "5. Remoção de Falhas" << std::endl;
+    std::cout << "6. Ajustar Contraste" << std::endl;
+    std::cout << "7. Calibrar Iluminação" << std::endl;
+    std::cout << "8. Correção de Cores" << std::endl;
+    std::cout << "9. Realçar Nitidez" << std::endl;
+    std::cout << "10. Tons de Cinza" << std::endl;
+
+int escolha;
+std::cin >> escolha;
+
+double alfa = 50.0, beta = 50.0;
+
+processador.render(cv::Mat(), escolha, alfa, beta, gama, delta);
+
+return o;
 }
