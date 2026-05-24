@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <clocale>
 #include "../include/render.h"
 #include <opencv2/opencv.hpp>
 
@@ -14,8 +15,9 @@ void Manual() {
     std::cout << "demo -> Módulo para demonstração." << std::endl;
 }
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char* argv[]){
+    setlocale(LC_ALL, "Portuguese");
+
     if (argc < 2) {
         Manual();
         return 0;
