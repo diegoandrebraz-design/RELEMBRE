@@ -1,67 +1,73 @@
 #include "../include/render.h"
-#include <cassert>
 #include <iostream>
 
-cv::Mat Render::render(const cv::Mat& arquivo, int escolha, double alfa, float beta, int gama, int delta) {
-    imagem = arquivo.clone();
+Render::Render() {
+    pausar = false;
+    cancelar = false;
+    reiniciar = false;
+}
 
-    if (arquivo.empty()) {
+Render::Render(const std::string& arquivo) {
+    leitor.open(arquivo);
+    pausar = false;
+    cancelar = false;
+    reiniciar = false;
+
+    if (!leitor.isOpened()) {
         std::cerr << "Erro ao abrir o arquivo!" << std::endl;
-        return arquivo;
     }
+}
 
+cv::Mat Render::render(int escolha, const Parametros& filtro) {
     while (true) {
         leitor >> imagem;
-        if (imagem.empty()) {
+        if (imagem.empty()) break;
+
+        switch (escolha) {
+        case 1: resultado = girar(imagem, filtro.alfa, filtro.gama); break;
+        case 2: resultado = recortar(imagem, filtro.gama, filtro.delta); break;
+        case 3: resultado = nitidez(imagem, filtro.alfa); break;
+        case 4: resultado = desfocar(imagem, filtro.gama); break;
+        case 5: resultado = remover(imagem, filtro.gama); break;
+        case 6: resultado = limpar(imagem, filtro.beta); break;
+        case 7: resultado = brilho(imagem, filtro.alfa); break;
+        case 8: resultado = contraste(imagem, filtro.alfa); break;
+        case 9: resultado = cores(imagem, filtro.alfa, filtro.gama); break;
+        case 10: resultado = cinzas(imagem, filtro.alfa); break;
+        default:
+            std::cout << "Opção invalida!\n";
+            resultado = imagem.clone();
             break;
         }
 
-        switch (escolha) {
-            case 1: resultado = girar(imagem, alfa, gama); break;
-            case 2: resultado = recortar(imagem, gama, delta); break;
-            case 3: resultado = nitidez(imagem, alfa); break;
-            case 4: resultado = desfocar(imagem, gama); break;
-            case 5: resultado = remover(imagem, gama); break;
-            case 6: resultado = limpar(imagem, beta); break;
-            case 7: resultado = brilho(imagem, alfa); break;
-            case 8: resultado = contraste(imagem, alfa); break;
-            case 9: resultado = cores(imagem, alfa, gama); break;
-            case 10: resultado = cinzas(imagem, alfa); break;
-            default:
-                std::cout << "Opção invalida. Mantendo arquivo original.\n";
-                resultado = imagem.clone();
-                break;
-        }
+        if (gravador.isOpened()) gravador.write(resultado);
 
-        if (gravador.isOpened()) {
-            gravador.write(resultado);
-        }
-
-        cv::imshow("Convertendo Video...", resultado);
-
-        int tecla = cv::waitKey(1);
+cv::imshow("Convertendo Video...", resultado);
+    int tecla = cv::waitKey(1);
 
         if (tecla == 'c') {
             std::cout << "Conversão cancelada!\n";
             break;
-        }
+            }
+
         if (tecla == 'p') {
-            std::cout << "Conversao pausada. Aperte novamente para continuar\n";
-            while (true) {
-                int pausa = cv::waitKey(30);
-                if (pausa == 'p') {
-                    std::cout << "Conversao retomada.\n";
-                    break;
+            std::cout << "Conversão pausada. Aperte novamente para continuar\n";
+                while (true) {
+                    int pausa = cv::waitKey(30);
+                    if (pausa == 'p') {
+                        std::cout << "Conversao retomada.\n";
+                        break;
+                    }
                 }
             }
-        }
+
         else if (tecla == 'r') {
             std::cout << "Conversão reiniciada\n";
-            leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
+                leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
+            }
         }
+        return resultado;
     }
-    return resultado;
-}
 
 cv::Mat Render::girar(const cv::Mat& arquivo, double alfa, int gama) {
     
@@ -82,15 +88,6 @@ cv::Mat Render::recortar(const cv::Mat& arquivo, int gama, int delta) {
     int largura = gama;
     int altura = delta;
 
-    if (esquerda == -1 && topo == -1) {
-        std::cout << "\n CORTE DE IMAGEM \n";
-        std::cout << "As dimensões atuais são: " << arquivo.cols << "x" << arquivo.rows << "\n";
-
-        std::cout << "Digite o ponto horizontal inicial (da esquerda para a direita): ";
-        std::cin >> esquerda;
-        std::cout << "Digite o ponto vertical inicial (de cima para baixo): ";
-        std::cin >> topo;
-    }
     if (esquerda < 0) { esquerda = 0; }
     if (topo < 0) { topo = 0; }
     if (esquerda + largura > arquivo.cols) { largura = arquivo.cols - esquerda; }
@@ -165,8 +162,6 @@ cv::Mat Render::contraste(const cv::Mat& arquivo, double alfa) {
     return resultado;
 }
 
-
-
 cv::Mat Render::cores(const cv::Mat& arquivo, double alfa, int gama) {
 
     if (alfa < 0.0)   { alfa = 0.0; }
@@ -199,48 +194,103 @@ cv::Mat Render::cinzas(const cv::Mat& arquivo, double alfa) {
     return resultado;
 }
 
-Render::Render(const std::string& arquivo) {
+cv::Mat Render::render(const std::vector<int>& escolhas, const Parametros& filtro) {
+    leitor >> imagem;
+    cv::Mat processada = imagem.clone();
+
+    for (int escolha : escolhas) {
+        switch (escolha) {
+        case 1: processada = girar(processada, filtro.alfa, filtro.gama); break;
+        case 2: processada = recortar(processada, filtro.gama, filtro.delta); break;
+        case 3: processada = nitidez(processada, filtro.alfa); break;
+        case 4: processada = desfocar(processada, filtro.gama); break;
+        case 5: processada = remover(processada, filtro.gama); break;
+        case 6: processada = limpar(processada, filtro.beta); break;
+        case 7: processada = brilho(processada, filtro.alfa); break;
+        case 8: processada = contraste(processada, filtro.alfa); break;
+        case 9: processada = cores(processada, filtro.alfa, filtro.gama); break;
+        case 10: processada = cinzas(processada, filtro.alfa); break;
+        }
+    }
+    return processada;
+}
+
+void Render::demo(int escolha, const Parametros& filtro) {
+    cv::Mat frame;
+    while (true) {
+        leitor >> frame;
+        if (frame.empty()) break;
+
+        switch (escolha) {
+        case 1: resultado = girar(frame, filtro.alfa, filtro.gama); break;
+        case 2: resultado = recortar(frame, filtro.gama, filtro.delta); break;
+        case 3: resultado = nitidez(frame, filtro.alfa); break;
+        case 4: resultado = desfocar(frame, filtro.gama); break;
+        case 5: resultado = remover(frame, filtro.gama); break;
+        case 6: resultado = limpar(frame, filtro.beta); break;
+        case 7: resultado = brilho(frame, filtro.alfa); break;
+        case 8: resultado = contraste(frame, filtro.alfa); break;
+        case 9: resultado = cores(frame, filtro.alfa, filtro.gama); break;
+        case 10: resultado = cinzas(frame, filtro.alfa); break;
+        default: resultado = frame.clone(); break;
+        }
+
+        cv::imshow("Demo Tempo Real", resultado);
+
+        if (cv::waitKey(1) == 27) {
+            break;
+        }
+    }
+    cv::destroyWindow("Demo Tempo Real");
+}
+
+void Render::camera(int dispositivo) {
+    leitor.open(dispositivo);
+}
+
+void Render::midia(const std::string& arquivo)
+{
     leitor.open(arquivo);
 
-    if (!leitor.isOpened()) {
-        std::cout << "Erro ao abrir o arquivo" << std::endl;
-    }
-    assert(leitor.isOpened());
     pausar = false;
     cancelar = false;
     reiniciar = false;
+
+    if (!leitor.isOpened())
+    {
+        std::cout << "Erro ao abrir o arquivo" << std::endl;
+    }
 }
 
-Render::~Render() {
-    if (leitor.isOpened())   { leitor.release(); }
-    if (gravador.isOpened()) { gravador.release(); }
-}
+Render::~Render(){
+        if (leitor.isOpened())   { leitor.release(); }
+        if (gravador.isOpened()) { gravador.release(); }
+    }
 
-void Render::janela() {
-    cv::Mat frame;
-    cv::namedWindow("Reprodutor", cv::WINDOW_AUTOSIZE);
+void Render::janela(){
+        cv::namedWindow("Reprodutor", cv::WINDOW_AUTOSIZE);
 
-    while (true) {
-        if (!pausar) {
-            leitor >> frame;
-            if (frame.empty()) {
+        while (true) {
+            if (!pausar) {
+                leitor >> imagem;
+                if (imagem.empty()) {
+                    break;
+                }
+                cv::imshow("Reprodutor", imagem);
+            }
+
+            int tecla = cv::waitKey(30);
+
+            if (tecla == 'c') {
                 break;
             }
-            cv::imshow("Reprodutor", frame);
+            if (tecla == 'p') {
+                pausar = !pausar;
+            }
+            else if (tecla == 'r') {
+                leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
+                pausar = false;
+            }
         }
-
-       int tecla = cv::waitKey(30);
-
-        if (tecla == 'c') {
-            break;
-        }
-        if (tecla == 'p') {
-            pausar = !pausar;
-        }
-        else if (tecla == 'r') {
-            leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
-            pausar = false;
-        }
+        cv::destroyWindow("Reprodutor");
     }
-    cv::destroyWindow("Reprodutor");
-}
