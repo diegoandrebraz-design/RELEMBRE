@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
-#include <clocale>
+#include <vector>
+#include <windows.h>
 #include "../include/render.h"
 #include <opencv2/opencv.hpp>
 
@@ -15,8 +16,9 @@ void Manual() {
     std::cout << "demo -> Módulo para demonstração." << std::endl;
 }
 
-int main(int argc, char* argv[]){
-    setlocale(LC_ALL, "Portuguese");
+int main(int argc, char* argv[]) {
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
 
     if (argc < 2) {
         Manual();
@@ -95,33 +97,33 @@ int main(int argc, char* argv[]){
         return 0;
     }
 
-    else if (modo == "pro"){
+    else if (modo == "pro") {
         std::string entrada;
-    std::cout << "Informe o caminho da midia: ";
-    std::cin >> entrada;
+        std::cout << "Informe o caminho da mídia: ";
+        std::cin >> entrada;
 
-    Render processador(entrada);
-    std::vector<int> sequencia;
-    int escolha = -1;
+        Render processador(entrada);
+        std::vector<int> sequencia;
+        int escolha = -1;
 
-    std::cout << "Digite os números dos filtros (0 para finalizar): " << std::endl;
-    while (escolha != 0) {
-        std::cin >> escolha;
-        if (escolha > 0 && escolha <= 10) {
-            sequencia.push_back(escolha);
+        std::cout << "Digite os números dos filtros (0 para finalizar): " << std::endl;
+        while (escolha != 0) {
+            std::cin >> escolha;
+            if (escolha > 0 && escolha <= 10) {
+                sequencia.push_back(escolha);
+            }
         }
+
+        double alfa = 50.0;
+        float beta = 50.0f;
+        int gama = 1;
+        int delta = 1;
+
+        cv::Mat resultado = processador.render(sequencia, {alfa, beta, gama, delta});
+
+        cv::imshow("Resultado Pro", resultado);
+        cv::waitKey(0);
     }
-
-    double alfa = 50.0;
-    float beta = 50.0f;
-    int gama = 1;
-    int delta = 1;
-
-    cv::Mat resultado = processador.render(sequencia, {alfa, beta, gama, delta});
-
-    cv::imshow("Resultado Pro", resultado);
-    cv::waitKey(0);
-}
 
     else if (modo == "demo") {
         std::string entrada;
