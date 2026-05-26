@@ -66,10 +66,7 @@ int main(int argc, char* argv[]) {
         std::cout << "Digite o número do filtro: ";
         std::cin >> escolha;
 
-        double alfa = 50.0;
-        float beta = 50.0f;
-        int gama = 1;
-        int delta = 1;
+        int gama = 1, delta = 1;
 
         if (escolha == 2 && opcao == 1) {
             static int esquerda = -1, topo = -1;
@@ -79,9 +76,9 @@ int main(int argc, char* argv[]) {
                 if (esquerda == -1 && topo == -1) {
                     std::cout << "\n CORTE DE IMAGEM \n";
                     std::cout << "As dimensões atuais são: " << temp.cols << "x" << temp.rows << "\n";
-                    std::cout << "Digite o ponto horizontal inicial (da esquerda para a direita): ";
+                    std::cout << "Digite o ponto horizontal inicial: ";
                     std::cin >> esquerda;
-                    std::cout << "Digite o ponto vertical inicial (de cima para baixo): ";
+                    std::cout << "Digite o ponto vertical inicial: ";
                     std::cin >> topo;
                     gama = esquerda;
                     delta = topo;
@@ -89,12 +86,10 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        cv::Mat resultado = processador.render(escolha, {alfa, beta, gama, delta});
+        cv::Mat resultado = processador.render(escolha, {50.0, 50.0f, gama, delta});
 
         cv::imshow("Resultado", resultado);
         cv::waitKey(0);
-
-        return 0;
     }
 
     else if (modo == "pro") {
@@ -114,12 +109,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-        double alfa = 50.0;
-        float beta = 50.0f;
-        int gama = 1;
-        int delta = 1;
-
-        cv::Mat resultado = processador.render(sequencia, {alfa, beta, gama, delta});
+        cv::Mat resultado = processador.render(sequencia,  {50.0, 50.0f, 1, 1});
 
         cv::imshow("Resultado Pro", resultado);
         cv::waitKey(0);
@@ -127,19 +117,16 @@ int main(int argc, char* argv[]) {
 
     else if (modo == "demo") {
         std::string entrada;
-        std::cout << "Informe o caminho da mídia para o módulo de demonstração: ";
+        std::cout << "Informe o caminho da mídia: ";
         std::cin >> entrada;
 
         Render processador(entrada);
         int escolha;
-
-        std::cout << "Escolha o filtro para exibição em tempo real (1-10): ";
+        std::cout << "Escolha o filtro (1-10): ";
         std::cin >> escolha;
 
-        Parametros p = {50.0, 50.0f, 1, 1};
-        processador.demo(escolha, p);
-
-        return 0;
+        Parametros filtro = {50.0, 50.0f, 1, 1};
+        processador.demo(escolha, filtro);
     }
 
     else {

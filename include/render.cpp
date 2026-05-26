@@ -210,6 +210,8 @@ cv::Mat Render::render(const std::vector<int>& escolhas, const Parametros& filtr
         case 8: processada = contraste(processada, filtro.alfa); break;
         case 9: processada = cores(processada, filtro.alfa, filtro.gama); break;
         case 10: processada = cinzas(processada, filtro.alfa); break;
+        default:
+            break;
         }
     }
     return processada;

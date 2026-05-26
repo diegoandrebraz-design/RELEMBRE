@@ -23,7 +23,6 @@ class Render{
         void camera(int dispositivo);
         void midia(const std::string& arquivo);
 
-        void testarOpenCV();
         void janela();
         ~Render();
 
