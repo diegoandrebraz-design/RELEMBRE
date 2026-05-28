@@ -216,9 +216,22 @@ cv::Mat Render::render(const std::vector<int>& escolhas, const Parametros& filtr
 
 void Render::demo(int escolha, const Parametros& filtro) {
     cv::Mat frame;
+
+    bool eh_webcam = (leitor.get(cv::CAP_PROP_FRAME_COUNT) <= 0);
+
+    std::cout << "\n[DEMO] Iniciando exibição. Pressione 'ESC' na janela para fechar.\n";
+
     while (true) {
         leitor >> frame;
-        if (frame.empty()) break;
+
+        if (frame.empty()) {
+            if (eh_webcam) {
+                cv::waitKey(10);
+                continue;
+            } else {
+                break;
+            }
+        }
 
         switch (escolha) {
         case 1: resultado = girar(frame, filtro.alfa, filtro.gama); break;
@@ -236,7 +249,8 @@ void Render::demo(int escolha, const Parametros& filtro) {
 
         cv::imshow("Demo Tempo Real", resultado);
 
-        if (cv::waitKey(1) == 27) {
+        int tecla = cv::waitKey(30);
+        if (tecla == 27) {
             break;
         }
     }

@@ -220,10 +220,21 @@ int main(int argc, char* argv[]) {
 
     else if (modo == "demo") {
         std::string entrada;
-        std::cout << "Informe o caminho da mídia: ";
+        std::cout << "Informe o caminho da mídia (ou digite 'webcam' para a câmera): ";
         std::cin >> entrada;
 
-        Render processador(entrada);
+        Render processador;
+
+        if (entrada == "webcam") {
+            processador.camera(0);
+            if (!processador.leitor.isOpened()) {
+                std::cout << "Erro: Câmera não abriu." << std::endl;
+                return -1;
+            }
+        } else {
+            processador.midia(entrada);
+        }
+
         int escolha;
         std::cout << "Escolha o filtro (1-10): ";
         std::cin >> escolha;
