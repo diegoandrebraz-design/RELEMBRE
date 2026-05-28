@@ -1,10 +1,7 @@
 #include "../include/render.h"
 #include <iostream>
 
-Render::Render() {
-    pausar = false;
-    cancelar = false;
-    reiniciar = false;
+Render::Render() : pausar(false), cancelar(false), reiniciar(false){
 }
 
 Render::Render(const std::string& arquivo) {
@@ -246,8 +243,14 @@ void Render::demo(int escolha, const Parametros& filtro) {
     cv::destroyWindow("Demo Tempo Real");
 }
 
-void Render::camera(int dispositivo) {
-    leitor.open(dispositivo);
+void Render::camera(int dispositivo){
+    if (leitor.isOpened()) {
+        leitor.release();
+    }
+
+    if (!leitor.open(dispositivo, cv::CAP_DSHOW)){
+        std::cerr << "Não foi possível acessar a câmera." << std::endl;
+    }
 }
 
 void Render::midia(const std::string& arquivo)

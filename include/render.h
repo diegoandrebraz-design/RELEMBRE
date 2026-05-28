@@ -26,10 +26,10 @@ class Render{
         void janela();
         ~Render();
 
+    cv::VideoCapture leitor;
     private:
         cv::Mat imagem;
         cv::Mat resultado;
-        cv::VideoCapture leitor;
         cv::VideoWriter gravador;
 
         bool pausar;
