@@ -4,25 +4,25 @@
 #include <windows.h>
 #include "../include/render.h"
 #include <opencv2/opencv.hpp>
+#include <filesystem>
 
 using namespace std;
 
 void Manual() {
-    std::cout << "\n                 RESGATE | RESTAURE | RELEMBRE                 " << std::endl;
+    std::cout << "\n         RESGATE | RESTAURE | RELEMBRE         " << std::endl;
     std::cout << "\n Para iniciar, escolha um das versões abaixo:\n" << std::endl;
-    std::cout << "* Digite: free (para o Módulo Iniciante)." << std::endl;
-    std::cout << "* Digite: pro (para o Módulo Profissional)." << std::endl;
-    std::cout << "* Digite: demo (para o Módulo de Demonstração)." << std::endl;
+    std::cout << "* Digite: free (para o Modo Iniciante)." << std::endl;
+    std::cout << "* Digite: pro (para o Modo Profissional)." << std::endl;
+    std::cout << "* Digite: demo (para o Modo de Demonstração)." << std::endl;
 }
 
 void Filtros() {
-    std::cout << "\n                 FILTROS DISPONÍVEIS                 \n";
-    std::cout << " [1] Girar Imagem      [2] Recortar Imagem\n";
-    std::cout << " [3] Ajustar Nitidez   [4] Desfocar Imagem\n";
-    std::cout << " [5] Remover Ruído     [6] Limpar Imagem\n";
-    std::cout << " [7] Ajustar Brilho    [8] Ajustar Contraste\n";
-    std::cout << " [9] Alterar Cores     [10] Escala de Cinzas\n";
-    std::cout << "=====================================================\n";
+    std::cout << "\n            FILTROS DISPONÍVEIS            \n";
+    std::cout << " [1] Girar              [2] Recortar\n";
+    std::cout << " [3] Ajustar Nitidez    [4] Desfocar\n";
+    std::cout << " [5] Remover Falhas     [6] Reduzir Ruídos\n";
+    std::cout << " [7] Ajustar Brilho     [8] Ajustar Contraste\n";
+    std::cout << " [9] Alterar Cores      [10] Escala de Cinzas\n";
 }
 
 int main(int argc, char* argv[])
@@ -45,7 +45,7 @@ int main(int argc, char* argv[])
         std::string entrada = " ";
         int opcao;
 
-        std::cout << "Iniciando o módulo para iniciantes..." << std::endl;
+        std::cout << "Iniciando a versão para iniciantes..." << std::endl;
         std::cout << "[1] Abrir um arquivo de mídia" << std::endl;
         std::cout << "[2] Sincronizar a Webcam" << std::endl;
         std::cout << "Opção: ";
@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
             std::cout << "Acessando a Webcam..." << std::endl;
 
             if (!processador.leitor.isOpened()) {
-                std::cout << "Erro: Câmera não abriu." << std::endl;
+                std::cout << "Erro! Não foi possível abrir a câmera." << std::endl;
                 return -1;
             }
         }
@@ -83,6 +83,7 @@ int main(int argc, char* argv[])
             int esquerda, topo, direita, base;
             cv::Mat temp = cv::imread(entrada);
 
+            std::cout << "Digite o ponto do ESQUERDA (X inicial): ";
             std::cin >> esquerda;
             std::cout << "Digite o ponto do TOPO (Y inicial): ";
             std::cin >> topo;
@@ -98,23 +99,25 @@ int main(int argc, char* argv[])
 
             if (!temp.empty()) {
                 if (esquerda == -1 && topo == -1){
-                    std::cerr << "Erro: O filtro retornou uma imagem vazia." << std::endl;
+                    std::cerr << "Erro! O filtro retornou uma imagem vazia." << std::endl;
                     return -1;
                 }
             }
         }
 
+        std::string extensao = std::filesystem::path(entrada).extension().string();
+
         if (opcao == 1 && (entrada.find(".png") != std::string::npos || entrada.find(".jpg") != std::string::npos)) {
             cv::Mat resultado = processador.render(escolha, {50.0, 50.0f, gama, delta});
 
             if (resultado.empty()){
-                std::cerr << "Erro: O filtro retornou uma imagem vazia." << std::endl;
+                std::cerr << "Erro! O filtro retornou uma imagem vazia." << std::endl;
                 return -1;
             }
 
-            cv::imshow("Resultado - Imagem", resultado);
+            cv::imshow("Finalizado!", resultado);
 
-            std::string saida_imagem = "resultado_processado.png";
+            std::string saida_imagem = "output/resultado_processado" + extensao;
             cv::imwrite(saida_imagem, resultado);
             std::cout << "Imagem salva com sucesso como: " << saida_imagem << std::endl;
 
@@ -122,7 +125,14 @@ int main(int argc, char* argv[])
         }
         else {
             cv::VideoWriter gravador;
-            std::string arquivo_saida = "resultado_webcam.mp4";
+            std::string arquivo_saida;
+
+            if (opcao == 2) {
+                arquivo_saida = "output/resultado_webcam.mp4";
+            } else {
+                arquivo_saida = "output/resultado_processado" + extensao;
+            }
+
             int codec = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
 
             std::cout << "\nGravando! Pressione a tecla 'ESC' na janela do vídeo para encerrar e salvar.\n";
@@ -159,6 +169,7 @@ int main(int argc, char* argv[])
             }
         }
     }
+
     else if (modo == "pro")
     {
         std::string entrada;
@@ -198,13 +209,17 @@ int main(int argc, char* argv[])
             }
         }
 
+        std::string extensao = std::filesystem::path(entrada).extension().string();
+
         if (!eh_webcam && (entrada.find(".png") != std::string::npos || entrada.find(".jpg") != std::string::npos)) {
             cv::Mat resultado = processador.render(sequencia, {50.0, 50.0f, 1, 1});
 
             if (!resultado.empty()) {
                 cv::imshow("Resultado Pro - Imagem", resultado);
-                cv::imwrite("resultado_pro.png", resultado);
-                std::cout << "Imagem Pro salva com sucesso como: resultado_pro.png" << std::endl;
+
+                std::string saida_imagem = "output/resultado_pro" + extensao;
+                cv::imwrite(saida_imagem, resultado);
+                std::cout << "Imagem Pro salva com sucesso como: " << saida_imagem << std::endl;
                 cv::waitKey(0);
             } else {
                 std::cerr << "Erro ao renderizar a imagem no modo Pro." << std::endl;
@@ -212,6 +227,14 @@ int main(int argc, char* argv[])
         }
         else {
             cv::VideoWriter gravador;
+            std::string arquivo_saida;
+
+            if (eh_webcam) {
+                arquivo_saida = "output/resultado_pro_webcam.mp4";
+            } else {
+                arquivo_saida = "output/resultado_pro_video" + extensao;
+            }
+
             int codec = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
             std::cout << "\nProcessando vídeo/webcam no modo Pro.\n";
             std::cout << "Comandos: [p] Pausar | [r] Reiniciar | [c] Cancelar/Sair\n";
@@ -232,7 +255,7 @@ int main(int argc, char* argv[])
                     }
 
                     if (!gravador.isOpened()) {
-                        gravador.open("resultado_pro_video.mp4", codec, 30.0, resultado.size());
+                        gravador.open(arquivo_saida, codec, 30.0, resultado.size());
                     }
 
                     if (gravador.isOpened()) {
@@ -266,11 +289,12 @@ int main(int argc, char* argv[])
 
             if (gravador.isOpened()) {
                 gravador.release();
-                std::cout << "\nVídeo Pro salvo com sucesso em: resultado_pro_video.mp4" << std::endl;
+                std::cout << "\nVídeo Pro salvo com sucesso em: " << arquivo_saida << std::endl;
             }
             cv::destroyWindow("Resultado Pro - Stream");
         }
     }
+
     else if (modo == "demo") {
         std::string entrada;
         std::cout << "Informe o caminho da mídia (ou digite 'webcam' para a câmera): ";
