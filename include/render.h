@@ -22,19 +22,20 @@ class Render{
 
         void camera(int dispositivo);
         void midia(const std::string& arquivo);
+        void recorte(int x, int y);
+
+        cv::VideoCapture leitor;
 
         void janela();
         ~Render();
 
-    cv::VideoCapture leitor;
     private:
         cv::Mat imagem;
         cv::Mat resultado;
         cv::VideoWriter gravador;
 
-        bool pausar;
-        bool cancelar;
-        bool reiniciar;
+        int esquerda = 0;
+        int topo = 0;
 
         cv::Mat girar(const cv::Mat& arquivo, double alfa, int gama);
         cv::Mat recortar(const cv::Mat& arquivo, int gama, int delta);
