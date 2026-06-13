@@ -195,43 +195,56 @@ cv::Mat Render::render(const std::vector<int>& escolhas, const Parametros& filtr
     return processada;
 }
 
-void Render::demo(int escolha, const Parametros& filtro) {
+void Render::demo(const std::vector<int>& escolhas, const Parametros& filtro) {
     cv::Mat frame;
-    bool eh_webcam = (leitor.get(cv::CAP_PROP_FRAME_COUNT) <= 0);
-
-    std::cout << "\n[DEMO] Iniciando exibição. Pressione 'ESC' na janela para fechar.\n";
+    bool camera = (leitor.get(cv::CAP_PROP_FRAME_COUNT) <= 0);
+    bool pausado = false;
 
     while (true) {
-        leitor >> frame;
+        if (!pausado) {
+            leitor >> frame;
 
-        if (frame.empty()) {
-            if (eh_webcam) {
-                cv::waitKey(10);
-                continue;
-            } else {
-                break;
+            if (frame.empty()) {
+                if (camera) {
+                    cv::waitKey(10);
+                    continue;
+                } else {
+                    break;
+                }
             }
-        }
 
-        switch (escolha) {
-        case 1: resultado = girar(frame, filtro.alfa, filtro.gama); break;
-        case 2: resultado = recortar(frame, filtro.gama, filtro.delta); break;
-        case 3: resultado = nitidez(frame, filtro.alfa); break;
-        case 4: resultado = desfocar(frame, filtro.gama); break;
-        case 5: resultado = remover(frame, filtro.gama); break;
-        case 6: resultado = limpar(frame, filtro.beta); break;
-        case 7: resultado = brilho(frame, filtro.alfa); break;
-        case 8: resultado = contraste(frame, filtro.alfa); break;
-        case 9: resultado = cores(frame, filtro.alfa, filtro.gama); break;
-        case 10: resultado = cinzas(frame, filtro.alfa); break;
-        default: resultado = frame.clone(); break;
+            cv::Mat processada = frame.clone();
+            for (int escolha : escolhas) {
+                switch (escolha) {
+                case 1: processada = girar(processada, filtro.alfa, filtro.gama); break;
+                case 2: processada = recortar(processada, filtro.gama, filtro.delta); break;
+                case 3: processada = nitidez(processada, filtro.alfa); break;
+                case 4: processada = desfocar(processada, filtro.gama); break;
+                case 5: processada = remover(processada, filtro.gama); break;
+                case 6: processada = limpar(processada, filtro.beta); break;
+                case 7: processada = brilho(processada, filtro.alfa); break;
+                case 8: processada = contraste(processada, filtro.alfa); break;
+                case 9: processada = cores(processada, filtro.alfa, filtro.gama); break;
+                case 10: processada = cinzas(processada, filtro.alfa); break;
+                default: break;
+                }
+            }
+            resultado = processada;
+            cv::imshow("Demo Tempo Real", resultado);
         }
-
-        cv::imshow("Demo Tempo Real", resultado);
 
         int tecla = cv::waitKey(30);
-        if (tecla == 27) {
+        if (tecla == 'c' || tecla == 27) {
             break;
+        }
+        if (tecla == 'p') {
+            pausado = !pausado;
+        }
+        if (tecla == 'r') {
+            if (!camera) {
+                leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
+                pausado = false;
+            }
         }
     }
     cv::destroyWindow("Demo Tempo Real");

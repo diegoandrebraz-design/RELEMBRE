@@ -79,9 +79,8 @@ int main(int argc, char* argv[])
 
         int gama = 1, delta = 1;
 
-        if (escolha == 2 && opcao == 1) {
+        if (escolha == 2) {
             int esquerda, topo, direita, base;
-            cv::Mat temp = cv::imread(entrada);
 
             std::cout << "Digite o ponto do ESQUERDA (X inicial): ";
             std::cin >> esquerda;
@@ -92,17 +91,9 @@ int main(int argc, char* argv[])
             std::cout << "Digite o ponto da BASE (Y final): ";
             std::cin >> base;
 
-            processador.recorte(esquerda, topo);
-
             gama = direita - esquerda;
             delta = base - topo;
-
-            if (!temp.empty()) {
-                if (esquerda == -1 && topo == -1){
-                    std::cerr << "Erro! O filtro retornou uma imagem vazia." << std::endl;
-                    return -1;
-                }
-            }
+            processador.recorte(esquerda, topo);
         }
 
         std::string extensao = std::filesystem::path(entrada).extension().string();
@@ -134,39 +125,52 @@ int main(int argc, char* argv[])
             }
 
             int codec = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
-
-            std::cout << "\nGravando! Pressione a tecla 'ESC' na janela do vídeo para encerrar e salvar.\n";
+            bool pausado = false;
 
             while (true) {
-                cv::Mat resultado = processador.render(escolha, {50.0, 50.0f, gama, delta});
+                if (!pausado) {
+                    cv::Mat resultado = processador.render(escolha, {50.0, 50.0f, gama, delta});
 
-                if (resultado.empty()) {
-                    continue;
-                }
-
-                if (!gravador.isOpened()) {
-                    gravador.open(arquivo_saida, codec, 30.0, resultado.size());
-                    if (!gravador.isOpened()) {
-                        std::cerr << "Erro ao iniciar o gravador de vídeo." << std::endl;
+                    if (resultado.empty()) {
+                        if (opcao == 2) {
+                            cv::waitKey(10);
+                            continue;
+                        } else {
+                            break;
+                        }
                     }
+
+                    if (!gravador.isOpened()) {
+                        gravador.open(arquivo_saida, codec, 30.0, resultado.size());
+                    }
+
+                    if (gravador.isOpened()) {
+                        gravador.write(resultado);
+                    }
+
+                    cv::imshow("Resultado - Stream", resultado);
                 }
 
-                if (gravador.isOpened()) {
-                    gravador.write(resultado);
-                }
-
-                cv::imshow("Resultado - Stream", resultado);
-
-                char tecla = static_cast<char>(cv::waitKey(30));
-                if (tecla == 27) {
+                int tecla = cv::waitKey(30);
+                if (tecla == 'c' || tecla == 27) {
                     break;
+                }
+                if (tecla == 'p') {
+                    pausado = !pausado;
+                }
+                if (tecla == 'r') {
+                    if (opcao != 2) {
+                        processador.leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
+                        pausado = false;
+                    }
                 }
             }
 
             if (gravador.isOpened()) {
                 gravador.release();
-                std::cout << "\nVídeo salvo com sucesso em: " << arquivo_saida << std::endl;
+                std::cout << "\nVídeo salva com sucesso em: " << arquivo_saida << std::endl;
             }
+            cv::destroyWindow("Resultado - Stream");
         }
     }
 
@@ -177,11 +181,11 @@ int main(int argc, char* argv[])
         std::cin >> entrada;
 
         Render processador;
-        bool eh_webcam = false;
+        bool camera = false;
 
         if (entrada == "webcam") {
             processador.camera(0);
-            eh_webcam = true;
+            camera = true;
             if (!processador.leitor.isOpened()) {
                 std::cout << "Erro ao abrir a câmera." << std::endl;
                 return -1;
@@ -199,6 +203,7 @@ int main(int argc, char* argv[])
 
         std::vector<int> sequencia;
         int escolha = -1;
+        int gama = 1, delta = 1;
 
         Filtros();
         std::cout << "Digite os números dos filtros na sequência desejada (0 para finalizar): " << std::endl;
@@ -206,47 +211,56 @@ int main(int argc, char* argv[])
             std::cin >> escolha;
             if (escolha > 0 && escolha <= 10) {
                 sequencia.push_back(escolha);
+
+                if (escolha == 2) {
+                    int esquerda, topo, direita, base;
+                    std::cout << "Digite o ponto do ESQUERDA (X inicial): ";
+                    std::cin >> esquerda;
+                    std::cout << "Digite o ponto do TOPO (Y inicial): ";
+                    std::cin >> topo;
+                    std::cout << "Digite o ponto da DIREITA (X final): ";
+                    std::cin >> direita;
+                    std::cout << "Digite o ponto da BASE (Y final): ";
+                    std::cin >> base;
+
+                    gama = direita - esquerda;
+                    delta = base - topo;
+                    processador.recorte(esquerda, topo);
+                }
             }
         }
 
         std::string extensao = std::filesystem::path(entrada).extension().string();
 
-        if (!eh_webcam && (entrada.find(".png") != std::string::npos || entrada.find(".jpg") != std::string::npos)) {
-            cv::Mat resultado = processador.render(sequencia, {50.0, 50.0f, 1, 1});
+        if (!camera && (entrada.find(".png") != std::string::npos || entrada.find(".jpg") != std::string::npos)) {
+            cv::Mat resultado = processador.render(sequencia, {50.0, 50.0f, gama, delta});
 
             if (!resultado.empty()) {
                 cv::imshow("Resultado Pro - Imagem", resultado);
-
                 std::string saida_imagem = "output/resultado_pro" + extensao;
                 cv::imwrite(saida_imagem, resultado);
-                std::cout << "Imagem Pro salva com sucesso como: " << saida_imagem << std::endl;
                 cv::waitKey(0);
-            } else {
-                std::cerr << "Erro ao renderizar a imagem no modo Pro." << std::endl;
             }
         }
         else {
             cv::VideoWriter gravador;
             std::string arquivo_saida;
 
-            if (eh_webcam) {
+            if (camera) {
                 arquivo_saida = "output/resultado_pro_webcam.mp4";
             } else {
                 arquivo_saida = "output/resultado_pro_video" + extensao;
             }
 
             int codec = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
-            std::cout << "\nProcessando vídeo/webcam no modo Pro.\n";
-            std::cout << "Comandos: [p] Pausar | [r] Reiniciar | [c] Cancelar/Sair\n";
-
             bool pausado = false;
 
             while (true) {
                 if (!pausado) {
-                    cv::Mat resultado = processador.render(sequencia, {50.0, 50.0f, 1, 1});
+                    cv::Mat resultado = processador.render(sequencia, {50.0, 50.0f, gama, delta});
 
                     if (resultado.empty()) {
-                        if (eh_webcam) {
+                        if (camera) {
                             cv::waitKey(10);
                             continue;
                         } else {
@@ -268,28 +282,21 @@ int main(int argc, char* argv[])
                 int tecla = cv::waitKey(30);
 
                 if (tecla == 'c') {
-                    std::cout << "Processamento cancelado!\n";
                     break;
                 }
-
                 if (tecla == 'p') {
                     pausado = !pausado;
-                    if (pausado) {
-                        std::cout << "Vídeo pausado. Aperte 'p' novamente para continuar.\n";
-                    } else {
-                        std::cout << "Vídeo retomado.\n";
-                    }
                 }
-
                 if (tecla == 'r') {
-                    std::cout << "Processamento reiniciado.\n";
-                    processador.leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
+                    if (!camera) {
+                        processador.leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
+                        pausado = false;
+                    }
                 }
             }
 
             if (gravador.isOpened()) {
                 gravador.release();
-                std::cout << "\nVídeo Pro salvo com sucesso em: " << arquivo_saida << std::endl;
             }
             cv::destroyWindow("Resultado Pro - Stream");
         }
@@ -305,7 +312,6 @@ int main(int argc, char* argv[])
         if (entrada == "webcam") {
             processador.camera(0);
             if (!processador.leitor.isOpened()) {
-                std::cout << "Erro: Câmera não abriu." << std::endl;
                 return -1;
             }
 
@@ -319,16 +325,40 @@ int main(int argc, char* argv[])
             processador.midia(entrada);
         }
 
-        Filtros();
-        int escolha;
-        std::cout << "Escolha o filtro (1-10): ";
-        std::cin >> escolha;
+        std::vector<int> sequencia;
+        int escolha = -1;
+        int gama = 1, delta = 1;
 
-        Parametros filtro = {50.0, 50.0f, 1, 1};
-        processador.demo(escolha, filtro);
+        Filtros();
+        std::cout << "Digite os números dos filtros na sequência desejada (0 para finalizar): " << std::endl;
+        while (escolha != 0) {
+            std::cin >> escolha;
+            if (escolha > 0 && escolha <= 10) {
+                sequencia.push_back(escolha);
+
+                if (escolha == 2) {
+                    int esquerda, topo, direita, base;
+
+                    std::cout << "Digite o ponto do ESQUERDA (X inicial): ";
+                    std::cin >> esquerda;
+                    std::cout << "Digite o ponto do TOPO (Y inicial): ";
+                    std::cin >> topo;
+                    std::cout << "Digite o ponto da DIREITA (X final): ";
+                    std::cin >> direita;
+                    std::cout << "Digite o ponto da BASE (Y final): ";
+                    std::cin >> base;
+
+                    gama = direita - esquerda;
+                    delta = base - topo;
+                    processador.recorte(esquerda, topo);
+                }
+            }
+        }
+
+        Parametros filtro = {50.0, 50.0f, gama, delta};
+        processador.demo(sequencia, filtro);
     }
     else {
-        std::cout << "Erro: Modo '" << modo << "' desconhecido." << std::endl;
         Manual();
         return 1;
     }
