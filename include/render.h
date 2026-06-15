@@ -12,16 +12,15 @@ struct Parametros {
     int delta = 0;
 };
 
-class Render{
+class Render {
 
 public:
     Render();
     Render(const std::string& arquivo);
 
     cv::Mat render(int escolha, const Parametros& filtro);
-
     cv::Mat render(const std::vector<int>& escolhas, const std::vector<Parametros>& filtro);
-    void demo(const std::vector<int>& escolhas, const std::vector<Parametros>& filtro);
+    cv::Mat comparar(const std::vector<int>& escolhas, const std::vector<Parametros>& filtro);
 
     cv::VideoCapture leitor;
 
