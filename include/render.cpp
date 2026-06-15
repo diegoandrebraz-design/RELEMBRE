@@ -37,6 +37,85 @@ cv::Mat Render::render(int escolha, const Parametros& filtro) {
     return resultado;
 }
 
+cv::Mat Render::render(const std::vector<int>& escolhas, const std::vector<Parametros>& filtros) {
+    leitor >> imagem;
+    if (imagem.empty()) return {};
+    cv::Mat processada = imagem.clone();
+
+    for (size_t i = 0; i < escolhas.size(); ++i) {
+        switch (escolhas[i]) {
+        case 1: processada = girar(processada, filtros[i].alfa, filtros[i].gama); break;
+        case 2: processada = recortar(processada, filtros[i].gama, filtros[i].delta); break;
+        case 3: processada = nitidez(processada, filtros[i].alfa); break;
+        case 4: processada = desfocar(processada, filtros[i].gama); break;
+        case 5: processada = remover(processada, filtros[i].gama); break;
+        case 6: processada = limpar(processada, filtros[i].beta); break;
+        case 7: processada = brilho(processada, filtros[i].alfa); break;
+        case 8: processada = contraste(processada, filtros[i].alfa); break;
+        case 9: processada = cores(processada, filtros[i].alfa, filtros[i].gama); break;
+        case 10: processada = cinzas(processada, filtros[i].alfa); break;
+        default: break;
+        }
+    }
+    return processada;
+}
+
+void Render::demo(const std::vector<int>& escolhas, const std::vector<Parametros>& filtros) {
+    cv::Mat frame;
+    bool camera = (leitor.get(cv::CAP_PROP_FRAME_COUNT) <= 0);
+    bool pausado = false;
+
+    while (true) {
+        if (!pausado) {
+            leitor >> frame;
+
+            if (frame.empty()) {
+                if (camera) {
+                    cv::waitKey(10);
+                    continue;
+                } else {
+                    break;
+                }
+            }
+
+            cv::Mat processada = frame.clone();
+            for (size_t i = 0; i < escolhas.size(); ++i) {
+                switch (escolhas[i]) {
+                case 1: processada = girar(processada, filtros[i].alfa, filtros[i].gama); break;
+                case 2: processada = recortar(processada, filtros[i].gama, filtros[i].delta); break;
+                case 3: processada = nitidez(processada, filtros[i].alfa); break;
+                case 4: processada = desfocar(processada, filtros[i].gama); break;
+                case 5: processada = remover(processada, filtros[i].gama); break;
+                case 6: processada = limpar(processada, filtros[i].beta); break;
+                case 7: processada = brilho(processada, filtros[i].alfa); break;
+                case 8: processada = contraste(processada, filtros[i].alfa); break;
+                case 9: processada = cores(processada, filtros[i].alfa, filtros[i].gama); break;
+                case 10: processada = cinzas(processada, filtros[i].alfa); break;
+                default: break;
+                }
+            }
+            resultado = processada;
+            cv::imshow("Demo Tempo Real", resultado);
+        }
+
+        int tecla = cv::waitKey(30) & 0xFF;
+
+        if (tecla == 'c' || tecla == 'C' || tecla == 27) {
+            break;
+        }
+        if (tecla == 'p') {
+            pausado = !pausado;
+        }
+        if (tecla == 'r') {
+            if (!camera) {
+                leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
+                pausado = false;
+            }
+        }
+    }
+    cv::destroyWindow("Demo Tempo Real");
+}
+
 cv::Mat Render::girar(const cv::Mat& arquivo, double alfa, int gama) {
     cv::Point2f centro(static_cast<float>(arquivo.cols) / 2.0f, static_cast<float>(arquivo.rows) / 2.0f);
     cv::Mat rotacao = cv::getRotationMatrix2D(centro, alfa, 1.0);
@@ -54,26 +133,23 @@ void Render::recorte(int x, int y) {
     topo = y;
 }
 
-cv::Mat Render::recortar(const cv::Mat& arquivo, int gama, int delta){
-    int largura = gama;
-    int altura = delta;
-
-    if (largura <= 1 && altura <= 1){
+cv::Mat Render::recortar(const cv::Mat& arquivo, int gama, int delta) {
+    if (gama <= 1 || delta <= 1) {
         return arquivo.clone();
     }
 
     if (esquerda < 0) esquerda = 0;
     if (topo < 0) topo = 0;
 
-    if (esquerda + largura > arquivo.cols){
-        largura = arquivo.cols - esquerda;
+    if (esquerda + gama > arquivo.cols) {
+        gama = arquivo.cols - esquerda;
     }
 
-    if (topo + altura > arquivo.rows){
-        altura = arquivo.rows - topo;
+    if (topo + delta > arquivo.rows) {
+        delta = arquivo.rows - topo;
     }
 
-    cv::Rect areaCorte(esquerda, topo, largura, altura);
+    cv::Rect areaCorte(esquerda, topo, gama, delta);
     resultado = arquivo(areaCorte).clone();
 
     return resultado;
@@ -92,7 +168,7 @@ cv::Mat Render::nitidez(const cv::Mat& arquivo, double alfa) {
     return resultado;
 }
 
-cv::Mat Render::desfocar(const cv::Mat& arquivo, int gama){
+cv::Mat Render::desfocar(const cv::Mat& arquivo, int gama) {
     int ksize = gama;
 
     if (ksize <= 0) {
@@ -171,91 +247,12 @@ cv::Mat Render::cinzas(const cv::Mat& arquivo, double alfa) {
     return resultado;
 }
 
-cv::Mat Render::render(const std::vector<int>& escolhas, const Parametros& filtro) {
-    leitor >> imagem;
-    if (imagem.empty()) return {};
-    cv::Mat processada = imagem.clone();
-
-    for (int escolha : escolhas) {
-        switch (escolha) {
-        case 1: processada = girar(processada, filtro.alfa, filtro.gama); break;
-        case 2: processada = recortar(processada, filtro.gama, filtro.delta); break;
-        case 3: processada = nitidez(processada, filtro.alfa); break;
-        case 4: processada = desfocar(processada, filtro.gama); break;
-        case 5: processada = remover(processada, filtro.gama); break;
-        case 6: processada = limpar(processada, filtro.beta); break;
-        case 7: processada = brilho(processada, filtro.alfa); break;
-        case 8: processada = contraste(processada, filtro.alfa); break;
-        case 9: processada = cores(processada, filtro.alfa, filtro.gama); break;
-        case 10: processada = cinzas(processada, filtro.alfa); break;
-        default:
-            break;
-        }
-    }
-    return processada;
-}
-
-void Render::demo(const std::vector<int>& escolhas, const Parametros& filtro) {
-    cv::Mat frame;
-    bool camera = (leitor.get(cv::CAP_PROP_FRAME_COUNT) <= 0);
-    bool pausado = false;
-
-    while (true) {
-        if (!pausado) {
-            leitor >> frame;
-
-            if (frame.empty()) {
-                if (camera) {
-                    cv::waitKey(10);
-                    continue;
-                } else {
-                    break;
-                }
-            }
-
-            cv::Mat processada = frame.clone();
-            for (int escolha : escolhas) {
-                switch (escolha) {
-                case 1: processada = girar(processada, filtro.alfa, filtro.gama); break;
-                case 2: processada = recortar(processada, filtro.gama, filtro.delta); break;
-                case 3: processada = nitidez(processada, filtro.alfa); break;
-                case 4: processada = desfocar(processada, filtro.gama); break;
-                case 5: processada = remover(processada, filtro.gama); break;
-                case 6: processada = limpar(processada, filtro.beta); break;
-                case 7: processada = brilho(processada, filtro.alfa); break;
-                case 8: processada = contraste(processada, filtro.alfa); break;
-                case 9: processada = cores(processada, filtro.alfa, filtro.gama); break;
-                case 10: processada = cinzas(processada, filtro.alfa); break;
-                default: break;
-                }
-            }
-            resultado = processada;
-            cv::imshow("Demo Tempo Real", resultado);
-        }
-
-        int tecla = cv::waitKey(30);
-        if (tecla == 'c' || tecla == 27) {
-            break;
-        }
-        if (tecla == 'p') {
-            pausado = !pausado;
-        }
-        if (tecla == 'r') {
-            if (!camera) {
-                leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
-                pausado = false;
-            }
-        }
-    }
-    cv::destroyWindow("Demo Tempo Real");
-}
-
-void Render::camera(int dispositivo){
+void Render::camera(int dispositivo) {
     if (leitor.isOpened()) {
         leitor.release();
     }
 
-    if (!leitor.open(dispositivo, cv::CAP_DSHOW)){
+    if (!leitor.open(dispositivo, cv::CAP_DSHOW)) {
         std::cerr << "Não foi possível acessar a câmera." << std::endl;
     }
 }
@@ -268,12 +265,12 @@ void Render::midia(const std::string& arquivo) {
     }
 }
 
-Render::~Render(){
+Render::~Render() {
     if (leitor.isOpened())   { leitor.release(); }
     if (gravador.isOpened()) { gravador.release(); }
 }
 
-void Render::janela(){
+void Render::janela() {
     cv::namedWindow("Reprodutor", cv::WINDOW_AUTOSIZE);
     bool local_pausar = false;
 
@@ -286,9 +283,9 @@ void Render::janela(){
             cv::imshow("Reprodutor", imagem);
         }
 
-        int tecla = cv::waitKey(30);
+        int tecla = cv::waitKey(30) & 0xFF;
 
-        if (tecla == 'c') {
+        if (tecla == 'c' || tecla == 27) {
             break;
         }
         if (tecla == 'p') {

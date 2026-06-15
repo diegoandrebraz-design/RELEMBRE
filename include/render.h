@@ -17,17 +17,19 @@ class Render{
 public:
     Render();
     Render(const std::string& arquivo);
-    cv::Mat render(int escolha, const Parametros& filtro);
-    cv::Mat render(const std::vector<int>& escolhas, const Parametros& filtro);
-    void demo(const std::vector<int>& escolhas, const Parametros& filtro);
 
-    void camera(int dispositivo);
-    void midia(const std::string& arquivo);
-    void recorte(int x, int y); // Voltando ao original (apenas 2 parâmetros)
+    cv::Mat render(int escolha, const Parametros& filtro);
+
+    cv::Mat render(const std::vector<int>& escolhas, const std::vector<Parametros>& filtros);
+    void demo(const std::vector<int>& escolhas, const std::vector<Parametros>& filtros);
 
     cv::VideoCapture leitor;
 
+    void camera(int dispositivo);
+    void midia(const std::string& arquivo);
+    void recorte(int x, int y);
     void janela();
+
     ~Render();
 
 private:
