@@ -233,6 +233,8 @@ cv::Mat Render::contraste(const cv::Mat& arquivo, double alfa) {
 }
 
 cv::Mat Render::cores(const cv::Mat& arquivo, double alfa, int gama) {
+    if (arquivo.channels() < 3) return arquivo.clone();
+
     if (alfa < 0.0)   { alfa = 0.0; }
     if (alfa > 100.0) { alfa = 100.0; }
 
@@ -256,7 +258,7 @@ cv::Mat Render::cinzas(const cv::Mat& arquivo, double alfa) {
     alfa = alfa / 100.0;
 
     cv::Mat imagemCinza;
-    cv::cvtColor(imagemCinza, imagemCinza, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(arquivo, imagemCinza, cv::COLOR_BGR2GRAY);
     cv::cvtColor(imagemCinza, imagemCinza, cv::COLOR_GRAY2BGR);
 
     cv::addWeighted(arquivo, 1.0 - alfa, imagemCinza, alfa, 0, resultado);
