@@ -20,8 +20,8 @@ public:
 
     cv::Mat render(int escolha, const Parametros& filtro);
 
-    cv::Mat render(const std::vector<int>& escolhas, const std::vector<Parametros>& filtros);
-    void demo(const std::vector<int>& escolhas, const std::vector<Parametros>& filtros);
+    cv::Mat render(const std::vector<int>& escolhas, const std::vector<Parametros>& filtro);
+    void demo(const std::vector<int>& escolhas, const std::vector<Parametros>& filtro);
 
     cv::VideoCapture leitor;
 
@@ -44,7 +44,7 @@ private:
     cv::Mat recortar(const cv::Mat& arquivo, int gama, int delta);
     cv::Mat nitidez(const cv::Mat& arquivo, double alfa);
     cv::Mat desfocar(const cv::Mat& arquivo, int gama);
-    cv::Mat remover(const cv::Mat& arquivo, int gama);
+    cv::Mat remover(const cv::Mat& arquivo, double alfa);
     cv::Mat limpar(const cv::Mat& arquivo, float beta);
     cv::Mat brilho(const cv::Mat& arquivo, double alfa);
     cv::Mat contraste(const cv::Mat& arquivo, double alfa);
