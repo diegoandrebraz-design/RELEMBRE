@@ -25,11 +25,13 @@ void Filtros() {
     std::cout << " [9] Alterar Cores      [10] Escala de Cinzas\n";
 }
 
-bool ValidarImagem(const std::string& extensao) {
-    std::string ext = extensao;
-    for (auto& c : ext) c = std::tolower(c);
-    return (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".webp");
-}
+bool ValidarImagem(const std::string& extensao){
+        std::string ext = extensao;
+        for (auto& c : ext) {
+            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        }
+        return (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".webp");
+    }
 
 int main(int argc, char* argv[]){
     SetConsoleOutputCP(CP_UTF8);
