@@ -17,7 +17,7 @@ void Manual() {
 }
 
 void Filtros() {
-    std::cout << "\n            FILTROS DISPONÍVEIS            \n";
+    std::cout << "\n             FILTROS DISPONÍVEIS            \n";
     std::cout << " [1] Girar              [2] Recortar\n";
     std::cout << " [3] Ajustar Nitidez    [4] Desfocar\n";
     std::cout << " [5] Remover Falhas     [6] Reduzir Ruídos\n";
@@ -25,9 +25,17 @@ void Filtros() {
     std::cout << " [9] Alterar Cores      [10] Escala de Cinzas\n";
 }
 
+bool ValidarImagem(const std::string& extensao) {
+    std::string ext = extensao;
+    for (auto& c : ext) c = std::tolower(c);
+    return (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".webp");
+}
+
 int main(int argc, char* argv[]){
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
+
+    std::filesystem::create_directories("output");
 
     std::string modo;
 
@@ -80,7 +88,7 @@ int main(int argc, char* argv[]){
                 std::cout << "Conectando e inicializando a sua Webcam..." << std::endl;
 
                 if (!processador.leitor.isOpened()) {
-                    std::cout << "Erro! Não conseguimos acessar a sua câmera. Verifique se ela está conectada e tente novamente.\n" << std::endl;
+                    std::cout << "Erro! Não conseguimos acessar a sua câmera. Verifique as permissões do dispositivo e tente novamente.\n" << std::endl;
                     continue;
                 }
                 cv::Mat x, y;
@@ -106,13 +114,13 @@ int main(int argc, char* argv[]){
         std::cout << "Selecione o número do filtro que deseja aplicar: ";
         std::cin >> escolha;
 
-        Parametros filtros = {1.0, 0.0f, 0, 0};
+        Parametros filtro = {1.0, 0.0f, 0, 0};
 
         if (escolha == 1) {
             std::cout << "Digite o ângulo de rotação (ex: 90, 180, -45): ";
-            std::cin >> filtros.alfa;
+            std::cin >> filtro.alfa;
             std::cout << "Deseja espelhar a imagem? (1: Horizontal | 0: Vertical | -1: Ambos | 2: Não espelhar): ";
-            std::cin >> filtros.gama;
+            std::cin >> filtro.gama;
         }
         else if (escolha == 2) {
             int esquerda, topo, direita, base;
@@ -125,49 +133,49 @@ int main(int argc, char* argv[]){
             std::cout << "Quantos pixels quer cortar da BASE: ";
             std::cin >> base;
 
-            filtros.gama = largura - esquerda - direita;
-            filtros.delta = altura - topo - base;
+            filtro.gama = largura - esquerda - direita;
+            filtro.delta = altura - topo - base;
             processador.recorte(esquerda, topo);
         }
         else if (escolha == 3) {
             std::cout << "Ajuste a intensidade da Nitidez (Escolha de 0 a 100): ";
-            std::cin >> filtros.alfa;
+            std::cin >> filtro.alfa;
         }
         else if (escolha == 4) {
             std::cout << "Escolha o nível de desfoque (Recomendado usar números ímpares como 3, 5, 7 ou 15): ";
-            std::cin >> filtros.gama;
+            std::cin >> filtro.gama;
         }
         else if (escolha == 5) {
-            std::cout << "Escolha o nível de suavização para remover falhas (Recomendado: 3, 5 ou 7): ";
-            std::cin >> filtros.gama;
+            std::cout << "Escolha o raio de pintura para remover falhas (Recomendado: 3.0): ";
+            std::cin >> filtro.alfa;
         }
         else if (escolha == 6) {
-            std::cout << "Digite a força da redução de ruído (Recomendado: de 1.0 a 10.0): ";
-            std::cin >> filtros.beta;
+            std::cout << "Digite o nível de redução de ruído (Recomendado: de 1.0 a 10.0): ";
+            std::cin >> filtro.beta;
         }
         else if (escolha == 7) {
-            std::cout << "Ajuste o Brilho (0: Escuro | 50: Original | 100: Muito Claro): ";
-            std::cin >> filtros.alfa;
+            std::cout << "Ajuste o brilho (0: Escuro | 50: Original | 100: Muito Claro): ";
+            std::cin >> filtro.alfa;
         }
         else if (escolha == 8) {
-            std::cout << "Ajuste o Contraste (0: Menos contraste | 50: Original | 100: Mais contraste): ";
-            std::cin >> filtros.alfa;
+            std::cout << "Ajuste o contraste (0: Menos contraste | 50: Original | 100: Mais contraste): ";
+            std::cin >> filtro.alfa;
         }
         else if (escolha == 9) {
             std::cout << "Digite a intensidade da cor (Escolha de 0 a 100): ";
-            std::cin >> filtros.alfa;
+            std::cin >> filtro.alfa;
             std::cout << "Qual canal de cor deseja destacar? (1: Azul | 2: Verde | 3: Vermelho): ";
-            std::cin >> filtros.gama;
+            std::cin >> filtro.gama;
         }
         else if (escolha == 10) {
             std::cout << "Ajuste o nível do efeito preto e branco (Escolha de 0 a 100): ";
-            std::cin >> filtros.alfa;
+            std::cin >> filtro.alfa;
         }
 
         std::string extensao = std::filesystem::path(entrada).extension().string();
 
-        if (opcao == 1 && (entrada.find(".png") != std::string::npos || entrada.find(".jpg") != std::string::npos)) {
-            cv::Mat resultado = processador.render(std::vector<int>{escolha}, std::vector<Parametros>{filtros});
+        if (opcao == 1 && ValidarImagem(extensao)) {
+            cv::Mat resultado = processador.render(std::vector<int>{escolha}, std::vector<Parametros>{filtro});
 
             if (resultado.empty()){
                 std::cerr << "Erro fatal! O filtro falhou e gerou uma imagem vazia." << std::endl;
@@ -176,20 +184,20 @@ int main(int argc, char* argv[]){
 
             cv::imshow("Finalizado!", resultado);
 
-            std::string saida_imagem = "output/resultado_processado" + extensao;
-            cv::imwrite(saida_imagem, resultado);
-            std::cout << "Imagem salva com sucesso na pasta: " << saida_imagem << std::endl;
+            std::string destino = "output/resultado_processado" + extensao;
+            cv::imwrite(destino, resultado);
+            std::cout << "Imagem salva com sucesso na pasta: " << destino << std::endl;
 
             cv::waitKey(0);
         }
         else {
             cv::VideoWriter gravador;
-            std::string arquivo_saida;
+            std::string video;
 
             if (opcao == 2) {
-                arquivo_saida = "output/resultado_webcam.mp4";
+                video = "output/resultado_webcam.mp4";
             } else {
-                arquivo_saida = "output/resultado_processado" + extensao;
+                video = "output/resultado_processado" + extensao;
             }
 
             int codec = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
@@ -197,7 +205,7 @@ int main(int argc, char* argv[]){
 
             while (true) {
                 if (!pausado) {
-                    cv::Mat resultado = processador.render(std::vector<int>{escolha}, std::vector<Parametros>{filtros});
+                    cv::Mat resultado = processador.render(std::vector<int>{escolha}, std::vector<Parametros>{filtro});
 
                     if (resultado.empty()) {
                         if (opcao == 2) {
@@ -209,7 +217,7 @@ int main(int argc, char* argv[]){
                     }
 
                     if (!gravador.isOpened()) {
-                        gravador.open(arquivo_saida, codec, 30.0, resultado.size());
+                        gravador.open(video, codec, 30.0, resultado.size());
                     }
 
                     if (gravador.isOpened()) {
@@ -236,13 +244,12 @@ int main(int argc, char* argv[]){
 
             if (gravador.isOpened()) {
                 gravador.release();
-                std::cout << "\nVídeo salvo com sucesso em: " << arquivo_saida << std::endl;
+                std::cout << "\nVídeo salvo em: " << video << std::endl;
             }
             cv::destroyWindow("Resultado - Stream");
         }
     }
-    else if (modo == "pro")
-    {
+    else if (modo == "pro") {
         Render processador;
         std::string entrada;
         bool camera = false;
@@ -292,7 +299,7 @@ int main(int argc, char* argv[]){
         }
 
         std::vector<int> sequencia;
-        std::vector<Parametros> filtros_lista;
+        std::vector<Parametros> filtros;
         int escolha = -1;
 
         Filtros();
@@ -304,87 +311,87 @@ int main(int argc, char* argv[]){
 
             if (escolha > 0 && escolha <= 10) {
                 sequencia.push_back(escolha);
-                Parametros filtros = {1.0, 0.0f, 0, 0};
+                Parametros filtro = {1.0, 0.0f, 0, 0};
 
                 if (escolha == 1) {
                     std::cout << "   [Girar] -> Ângulo de rotação: ";
-                    std::cin >> filtros.alfa;
+                    std::cin >> filtro.alfa;
                     std::cout << "   [Girar] -> Modo de espelhamento (1: Horiz, 0: Vert, -1: Ambos, 2: Nenhum): ";
-                    std::cin >> filtros.gama;
+                    std::cin >> filtro.gama;
                 }
                 else if (escolha == 2) {
-                    int esquerda, topo, whites, base;
+                    int esquerda, topo, direita, base;
                     std::cout << "   [Recortar] -> Margem da ESQUERDA (X inicial): ";
                     std::cin >> esquerda;
                     std::cout << "   [Recortar] -> Margem do TOPO (Y inicial): ";
                     std::cin >> topo;
                     std::cout << "   [Recortar] -> Margem da DIREITA (X corte): ";
-                    std::cin >> whites;
+                    std::cin >> direita;
                     std::cout << "   [Recortar] -> Margem da BASE (Y corte): ";
                     std::cin >> base;
 
-                    filtros.gama = largura - esquerda - whites;
-                    filtros.delta = altura - topo - base;
+                    filtro.gama = largura - esquerda - direita;
+                    filtro.delta = altura - topo - base;
                     processador.recorte(esquerda, topo);
                 }
                 else if (escolha == 3) {
                     std::cout << "   [Nitidez] -> Fator multiplicador (0 a 100): ";
-                    std::cin >> filtros.alfa;
+                    std::cin >> filtro.alfa;
                 }
                 else if (escolha == 4) {
-                    std::cout << "   [Desfocar] -> Dimensão do Kernel Ímpar: ";
-                    std::cin >> filtros.gama;
+                    std::cout << "   [Desfocar] -> Dimensão do Kernel (Ímpar): ";
+                    std::cin >> filtro.gama;
                 }
                 else if (escolha == 5) {
-                    std::cout << "   [Remover Falhas] -> Dimensão do Kernel Ímpar: ";
-                    std::cin >> filtros.gama;
+                    std::cout << "   [Remover Falhas] -> Raio de pintura: ";
+                    std::cin >> filtro.alfa;
                 }
                 else if (escolha == 6) {
                     std::cout << "   [Reduzir Ruídos] -> Desvio padrão h (1.0 a 10.0): ";
-                    std::cin >> filtros.beta;
+                    std::cin >> filtro.beta;
                 }
                 else if (escolha == 7) {
                     std::cout << "   [Brilho] -> Incremento alfa (0 a 100): ";
-                    std::cin >> filtros.alfa;
+                    std::cin >> filtro.alfa;
                 }
                 else if (escolha == 8) {
                     std::cout << "   [Contraste] -> Ganho alfa (0 a 100): ";
-                    std::cin >> filtros.alfa;
+                    std::cin >> filtro.alfa;
                 }
                 else if (escolha == 9) {
                     std::cout << "   [Alterar Cores] -> Escalar multiplicador: ";
-                    std::cin >> filtros.alfa;
+                    std::cin >> filtro.alfa;
                     std::cout << "   [Alterar Cores] -> ID do Canal (1: B | 2: G | 3: R): ";
-                    std::cin >> filtros.gama;
+                    std::cin >> filtro.gama;
                 }
                 else if (escolha == 10) {
                     std::cout << "   [Escala de Cinzas] -> Peso da conversão (0 a 100): ";
-                    std::cin >> filtros.alfa;
+                    std::cin >> filtro.alfa;
                 }
-                filtros_lista.push_back(filtros);
+                filtros.push_back(filtro);
             }
         }
 
         std::string extensao = std::filesystem::path(entrada).extension().string();
 
-        if (!camera && (entrada.find(".png") != std::string::npos || entrada.find(".jpg") != std::string::npos)) {
-            cv::Mat resultado = processador.render(sequencia, filtros_lista);
+        if (!camera && ValidarImagem(extensao)) {
+            cv::Mat resultado = processador.render(sequencia, filtros);
 
             if (!resultado.empty()) {
                 cv::imshow("Resultado Pro - Imagem", resultado);
-                std::string saida_imagem = "output/resultado_pro" + extensao;
-                cv::imwrite(saida_imagem, resultado);
+                std::string destino = "output/resultado_pro" + extensao;
+                cv::imwrite(destino, resultado);
                 cv::waitKey(0);
             }
         }
         else {
             cv::VideoWriter gravador;
-            std::string arquivo_saida;
+            std::string video;
 
             if (camera) {
-                arquivo_saida = "output/resultado_pro_webcam.mp4";
+                video = "output/resultado_pro_webcam.mp4";
             } else {
-                arquivo_saida = "output/resultado_pro_video" + extensao;
+                video = "output/resultado_pro_video" + extensao;
             }
 
             int codec = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
@@ -392,7 +399,7 @@ int main(int argc, char* argv[]){
 
             while (true) {
                 if (!pausado) {
-                    cv::Mat resultado = processador.render(sequencia, filtros_lista);
+                    cv::Mat resultado = processador.render(sequencia, filtros);
 
                     if (resultado.empty()) {
                         if (camera) {
@@ -404,7 +411,7 @@ int main(int argc, char* argv[]){
                     }
 
                     if (!gravador.isOpened()) {
-                        gravador.open(arquivo_saida, codec, 30.0, resultado.size());
+                        gravador.open(video, codec, 30.0, resultado.size());
                     }
 
                     if (gravador.isOpened()) {
@@ -485,94 +492,79 @@ int main(int argc, char* argv[]){
             }
         }
 
-        std::vector<int> sequencia;
-        std::vector<Parametros> filtros_lista;
-        int escolha = -1;
-
-        Filtros();
-        std::cout << "Digite a sequência dos filtros para a demonstração (Digite 0 para finalizar):" << std::endl;
         while (true) {
-            std::cout << ">> Adicionar ao Demo: ";
-            std::cin >> escolha;
-            if (escolha == 0) break;
+            std::vector<int> sequencia;
+            std::vector<Parametros> filtros;
+            int escolha = -1;
 
-            if (escolha > 0 && escolha <= 10) {
-                sequencia.push_back(escolha);
-                Parametros filtros = {1.0, 0.0f, 0, 0};
-
-                if (escolha == 1) {
-                    std::cout << "   [Demo: Girar] -> Ângulo: ";
-                    std::cin >> filtros.alfa;
-                    std::cout << "   [Demo: Girar] -> Espelhamento: ";
-                    std::cin >> filtros.gama;
-                }
-                else if (escolha == 2) {
-                    int esquerda, topo, direita, base;
-
-                    std::cout << "   [Demo: Recortar] -> Borda Esquerda: ";
-                    std::cin >> esquerda;
-                    std::cout << "   [Demo: Recortar] -> Borda Topo: ";
-                    std::cin >> topo;
-                    std::cout << "   [Demo: Recortar] -> Borda Direita: ";
-                    std::cin >> direita;
-                    std::cout << "   [Demo: Recortar] -> Borda Base: ";
-                    std::cin >> base;
-
-                    filtros.gama = largura - esquerda - direita;
-                    filtros.delta = altura - topo - base;
-                    processador.recorte(esquerda, topo);
-                }
-                else if (escolha == 3) {
-                    std::cout << "   [Demo: Nitidez] -> Intensidade: ";
-                    std::cin >> filtros.alfa;
-                }
-                else if (escolha == 4) {
-                    std::cout << "   [Demo: Desfocar] -> Kernel: ";
-                    std::cin >> filtros.gama;
-                }
-                else if (escolha == 5) {
-                    std::cout << "   [Demo: Remover Falhas] -> Kernel: ";
-                    std::cin >> filtros.gama;
-                }
-                else if (escolha == 6) {
-                    std::cout << "   [Demo: Reduzir Ruídos] -> Fator: ";
-                    std::cin >> filtros.beta;
-                }
-                else if (escolha == 7) {
-                    std::cout << "   [Demo: Brilho] -> Nível: ";
-                    std::cin >> filtros.alfa;
-                }
-                else if (escolha == 8) {
-                    std::cout << "   [Demo: Contraste] -> Nível: ";
-                    std::cin >> filtros.alfa;
-                }
-                else if (escolha == 9) {
-                    std::cout << "   [Demo: Cores] -> Multiplicador: ";
-                    std::cin >> filtros.alfa;
-                    std::cout << "   [Demo: Cores] -> Canal (1/2/3): ";
-                    std::cin >> filtros.gama;
-                }
-                else if (escolha == 10) {
-                    std::cout << "   [Demo: Cinzas] -> Mesclagem: ";
-                    std::cin >> filtros.alfa;
-                }
-                filtros_lista.push_back(filtros);
-            }
-        }
-
-        if (!camera && (entrada.find(".png") != std::string::npos || entrada.find(".jpg") != std::string::npos)) {
-            processador.demo(sequencia, filtros_lista);
-        }
-        else {
+            Filtros();
+            std::cout << "Digite a sequência dos filtros para a demonstração (Digite 0 para iniciar | Digite -1 para SAIR do programa):" << std::endl;
+            
+            bool sair = false;
             while (true) {
-                processador.demo(sequencia, filtros_lista);
-
-                int tecla = cv::waitKey(30);
-                if (tecla == 'c' || tecla == 27) {
+                std::cout << ">> Adicionar ao Demo: ";
+                std::cin >> escolha;
+                if (escolha == 0) break;
+                if (escolha == -1) {
+                    sair = true;
                     break;
                 }
+
+                if (escolha > 0 && escolha <= 10) {
+                    sequencia.push_back(escolha);
+                    Parametros filtro = {1.0, 0.0f, 0, 0};
+
+                    if (escolha == 1) {
+                        std::cout << "   [Demo: Girar] -> Ângulo: ";
+                        std::cin >> filtro.alfa;
+                        std::cout << "   [Demo: Girar] -> Espelhamento: ";
+                        std::cin >> filtro.gama;
+                    }
+                    else if (escolha == 2) {
+                        int esquerda, topo, direita, base;
+                        std::cout << "   [Demo: Recortar] -> Borda Esquerda: ";
+                        std::cin >> esquerda;
+                        std::cout << "   [Demo: Recortar] -> Borda Topo: ";
+                        std::cin >> topo;
+                        std::cout << "   [Demo: Recortar] -> Borda Direita: ";
+                        std::cin >> direita;
+                        std::cout << "   [Demo: Recortar] -> Borda Base: ";
+                        std::cin >> base;
+
+                        filtro.gama = largura - esquerda - direita;
+                        filtro.delta = altura - topo - base;
+                        processador.recorte(esquerda, topo);
+                    }
+                    else if (escolha == 3) { std::cout << "   [Demo: Nitidez] -> Intensidade: "; std::cin >> filtro.alfa; }
+                    else if (escolha == 4) { std::cout << "   [Demo: Desfocar] -> Kernel: "; std::cin >> filtro.gama; }
+                    else if (escolha == 5) { std::cout << "   [Demo: Remover Falhas] -> Raio: "; std::cin >> filtro.alfa; }
+                    else if (escolha == 6) { std::cout << "   [Demo: Reduzir Ruídos] -> Fator: "; std::cin >> filtro.beta; }
+                    else if (escolha == 7) { std::cout << "   [Demo: Brilho] -> Nível: "; std::cin >> filtro.alfa; }
+                    else if (escolha == 8) { std::cout << "   [Demo: Contraste] -> Nível: "; std::cin >> filtro.alfa; }
+                    else if (escolha == 9) {
+                        std::cout << "   [Demo: Cores] -> Multiplicador: "; std::cin >> filtro.alfa;
+                        std::cout << "   [Demo: Cores] -> Canal (1/2/3): "; std::cin >> filtro.gama;
+                    }
+                    else if (escolha == 10) { std::cout << "   [Demo: Cinzas] -> Mesclagem: "; std::cin >> filtro.alfa; }
+                    
+                    filtros.push_back(filtro);
+                }
             }
-            cv::destroyWindow("Modo Demonstracao");
+
+            if (sair) {
+                break; 
+            }
+
+            if (sequencia.empty()) {
+                std::cout << "Nenhum filtro selecionado. Tente novamente.\n";
+                continue;
+            }
+
+            if (!camera) {
+                processador.leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
+            }
+
+            processador.comparar(sequencia, filtros);
         }
     }
     else {
