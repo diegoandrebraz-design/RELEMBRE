@@ -1,7 +1,7 @@
 #include "../include/render.h"
 #include <iostream>
 
-Render::Render() =default;
+Render::Render() = default;
 
 Render::Render(const std::string& arquivo) {
     leitor.open(arquivo);
@@ -60,16 +60,19 @@ cv::Mat Render::render(const std::vector<int>& escolhas, const std::vector<Param
     return processada;
 }
 
-void Render::demo(const std::vector<int>& escolhas, const std::vector<Parametros>& filtro) {
-    cv::Mat frame;
+cv::Mat Render::comparar(const std::vector<int>& escolhas, const std::vector<Parametros>& filtro) {
     bool camera = (leitor.get(cv::CAP_PROP_FRAME_COUNT) <= 0);
     bool pausado = false;
 
     while (true) {
         if (!pausado) {
-            leitor >> frame;
+            if (leitor.isOpened()) {
+                double pos = leitor.get(cv::CAP_PROP_POS_FRAMES);
+                leitor >> imagem;
+                leitor.set(cv::CAP_PROP_POS_FRAMES, pos);
+            }
 
-            if (frame.empty()) {
+            if (imagem.empty()) {
                 if (camera) {
                     cv::waitKey(10);
                     continue;
@@ -78,24 +81,23 @@ void Render::demo(const std::vector<int>& escolhas, const std::vector<Parametros
                 }
             }
 
-            cv::Mat processada = frame.clone();
-            for (size_t i = 0; i < escolhas.size(); ++i) {
-                switch (escolhas[i]) {
-                case 1: processada = girar(processada, filtro[i].alfa, filtro[i].gama); break;
-                case 2: processada = recortar(processada, filtro[i].gama, filtro[i].delta); break;
-                case 3: processada = nitidez(processada, filtro[i].alfa); break;
-                case 4: processada = desfocar(processada, filtro[i].gama); break;
-                case 5: processada = remover(processada, filtro[i].alfa); break;
-                case 6: processada = limpar(processada, filtro[i].beta); break;
-                case 7: processada = brilho(processada, filtro[i].alfa); break;
-                case 8: processada = contraste(processada, filtro[i].alfa); break;
-                case 9: processada = cores(processada, filtro[i].alfa, filtro[i].gama); break;
-                case 10: processada = cinzas(processada, filtro[i].alfa); break;
-                default: break;
-                }
+            cv::Mat processado = render(escolhas, filtro);
+            if (processado.empty()) {
+                break;
             }
-            resultado = processada;
-            cv::imshow("Demo Tempo Real", resultado);
+
+            if (imagem.size() != processado.size()) {
+                cv::resize(imagem, imagem, processado.size());
+            }
+
+            if (processado.channels() == 1 && imagem.channels() == 3) {
+                cv::cvtColor(processado, processado, cv::COLOR_GRAY2BGR);
+            } else if (processado.channels() == 3 && imagem.channels() == 1) {
+                cv::cvtColor(imagem, imagem, cv::COLOR_GRAY2BGR);
+            }
+
+            cv::hconcat(imagem, processado, resultado);
+            cv::imshow("Comparacao Lado a Lado", resultado);
         }
 
         int tecla = cv::waitKey(30) & 0xFF;
@@ -113,14 +115,15 @@ void Render::demo(const std::vector<int>& escolhas, const std::vector<Parametros
             }
         }
     }
-    cv::destroyWindow("Demo Tempo Real");
+    cv::destroyWindow("Comparacao Lado a Lado");
+    return resultado;
 }
 
 cv::Mat Render::girar(const cv::Mat& arquivo, double alfa, int gama) {
     cv::Point2f centro(static_cast<float>(arquivo.cols) / 2.0f, static_cast<float>(arquivo.rows) / 2.0f);
-    cv::Mat rotacao = cv::getRotationMatrix2D(centro, alfa, 1.0);
+    cv::Mat mocao = cv::getRotationMatrix2D(centro, alfa, 1.0);
 
-    cv::warpAffine(arquivo, resultado, rotacao, arquivo.size());
+    cv::warpAffine(arquivo, resultado, mocao, arquivo.size());
 
     if (gama == 1 || gama == 0 || gama == -1) {
         cv::flip(resultado, resultado, gama);
@@ -253,7 +256,7 @@ cv::Mat Render::cinzas(const cv::Mat& arquivo, double alfa) {
     alfa = alfa / 100.0;
 
     cv::Mat imagemCinza;
-    cv::cvtColor(arquivo, imagemCinza, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(imagemCinza, imagemCinza, cv::COLOR_BGR2GRAY);
     cv::cvtColor(imagemCinza, imagemCinza, cv::COLOR_GRAY2BGR);
 
     cv::addWeighted(arquivo, 1.0 - alfa, imagemCinza, alfa, 0, resultado);
@@ -278,17 +281,12 @@ void Render::midia(const std::string& arquivo) {
     }
 }
 
-Render::~Render() {
-    if (leitor.isOpened())   { leitor.release(); }
-    if (gravador.isOpened()) { gravador.release(); }
-}
-
 void Render::janela() {
     cv::namedWindow("Reprodutor", cv::WINDOW_AUTOSIZE);
-    bool local_pausar = false;
+    bool localPausar = false;
 
     while (true) {
-        if (!local_pausar) {
+        if (!localPausar) {
             leitor >> imagem;
             if (imagem.empty()) {
                 break;
@@ -302,12 +300,17 @@ void Render::janela() {
             break;
         }
         if (tecla == 'p') {
-            local_pausar = !local_pausar;
+            localPausar = !localPausar;
         }
         else if (tecla == 'r') {
             leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
-            local_pausar = false;
+            localPausar = false;
         }
     }
     cv::destroyWindow("Reprodutor");
+}
+
+Render::~Render() {
+    if (leitor.isOpened())   { leitor.release(); }
+    if (gravador.isOpened()) { gravador.release(); }
 }
