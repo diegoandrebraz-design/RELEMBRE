@@ -166,15 +166,21 @@ cv::Mat Render::granular(const cv::Mat& arquivo, double alfa) {
     if (alfa < 0.0) alfa = 0.0;
     if (alfa > 100.0) alfa = 100.0;
 
-    cv::Mat ruido = cv::Mat::zeros(arquivo.size(), arquivo.type());
+    cv::Mat ruidoCinza = cv::Mat::zeros(arquivo.size(), CV_8SC1);
+    cv::randn(ruidoCinza, cv::Scalar(0), cv::Scalar(alfa));
+
+    cv::Mat resultadoProvisorio;
 
     if (arquivo.channels() == 3) {
-        cv::randn(ruido, cv::Scalar(0, 0, 0), cv::Scalar(alfa, alfa, alfa));
+        cv::Mat ruidoColorido;
+        std::vector<cv::Mat> canaisRuido = {ruidoCinza, ruidoCinza, ruidoCinza};
+        cv::merge(canaisRuido, ruidoColorido);
+        cv::add(arquivo, ruidoColorido, resultadoProvisorio, cv::Mat(), arquivo.type());
     } else {
-        cv::randn(ruido, cv::Scalar(0), cv::Scalar(alfa));
+        cv::add(arquivo, ruidoCinza, resultadoProvisorio, cv::Mat(), arquivo.type());
     }
 
-    cv::add(arquivo, ruido, resultado);
+    resultado = resultadoProvisorio;
     return resultado;
 }
 
