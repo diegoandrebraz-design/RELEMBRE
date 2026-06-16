@@ -188,20 +188,36 @@ cv::Mat Render::desfocar(const cv::Mat& arquivo, int gama) {
 cv::Mat Render::remover(const cv::Mat& arquivo, double alfa) {
     if (arquivo.empty()) return arquivo.clone();
 
-    if (alfa <= 0.0) {
-        alfa = 3.0;
-    }
+    double sensibilidade = alfa;
+    if (sensibilidade <= 0.0) sensibilidade = 40.0;
+    if (sensibilidade > 254.0) sensibilidade = 254.0;
 
-    cv::Mat mascara;
     cv::Mat cinza;
     if (arquivo.channels() == 3) {
         cv::cvtColor(arquivo, cinza, cv::COLOR_BGR2GRAY);
     } else {
         cinza = arquivo.clone();
     }
-    cv::threshold(cinza, mascara, 250, 255, cv::THRESH_BINARY);
 
-    cv::inpaint(arquivo, mascara, resultado, alfa, cv::INPAINT_TELEA);
+    cv::Mat gradY;
+    cv::Sobel(cinza, gradY, CV_16S, 0, 1, 3);
+    cv::convertScaleAbs(gradY, gradY);
+
+    cv::Mat mascara;
+    cv::threshold(gradY, mascara, sensibilidade, 255, cv::THRESH_BINARY);
+
+    cv::Mat kernel = cv::getStructuringElement(cv::MORPH_RECT, cv::Size(40, 1));
+    cv::morphologyEx(mascara, mascara, cv::MORPH_OPEN, kernel);
+
+    int espessura = 3;
+    if (sensibilidade < 30.0) espessura = 5;
+    cv::dilate(mascara, mascara, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(espessura, espessura)));
+
+    if (mascara.type() != CV_8UC1) {
+        mascara.convertTo(mascara, CV_8UC1);
+    }
+
+    cv::inpaint(arquivo, mascara, resultado, 3.0, cv::INPAINT_NS);
 
     return resultado;
 }
