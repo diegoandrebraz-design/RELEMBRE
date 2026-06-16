@@ -41,6 +41,7 @@ private:
 
     cv::Mat girar(const cv::Mat& arquivo, double alfa, int gama);
     cv::Mat recortar(const cv::Mat& arquivo, int gama, int delta);
+    cv::Mat granular(const cv::Mat& arquivo, double alfa);
     cv::Mat nitidez(const cv::Mat& arquivo, double alfa);
     cv::Mat desfocar(const cv::Mat& arquivo, int gama);
     cv::Mat remover(const cv::Mat& arquivo, double alfa);

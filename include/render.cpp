@@ -18,14 +18,15 @@ cv::Mat Render::render(int escolha, const Parametros& filtro) {
     switch (escolha) {
     case 1: resultado = girar(imagem, filtro.alfa, filtro.gama); break;
     case 2: resultado = recortar(imagem, filtro.gama, filtro.delta); break;
-    case 3: resultado = nitidez(imagem, filtro.alfa); break;
-    case 4: resultado = desfocar(imagem, filtro.gama); break;
-    case 5: resultado = remover(imagem, filtro.alfa); break;
-    case 6: resultado = limpar(imagem, filtro.beta); break;
-    case 7: resultado = brilho(imagem, filtro.alfa); break;
-    case 8: resultado = contraste(imagem, filtro.alfa); break;
-    case 9: resultado = cores(imagem, filtro.alfa, filtro.gama); break;
-    case 10: resultado = cinzas(imagem, filtro.alfa); break;
+    case 3: resultado = granular(imagem, filtro.alfa); break;
+    case 4: resultado = nitidez(imagem, filtro.alfa); break;
+    case 5: resultado = desfocar(imagem, filtro.gama); break;
+    case 6: resultado = remover(imagem, filtro.alfa); break;
+    case 7: resultado = limpar(imagem, filtro.beta); break;
+    case 8: resultado = brilho(imagem, filtro.alfa); break;
+    case 9: resultado = contraste(imagem, filtro.alfa); break;
+    case 10: resultado = cores(imagem, filtro.alfa, filtro.gama); break;
+    case 11: resultado = cinzas(imagem, filtro.alfa); break;
     default:
         std::cout << "Opção invalida!\n";
         resultado = imagem.clone();
@@ -46,14 +47,15 @@ cv::Mat Render::render(const std::vector<int>& escolhas, const std::vector<Param
         switch (escolhas[i]) {
         case 1: processada = girar(processada, filtro[i].alfa, filtro[i].gama); break;
         case 2: processada = recortar(processada, filtro[i].gama, filtro[i].delta); break;
-        case 3: processada = nitidez(processada, filtro[i].alfa); break;
-        case 4: processada = desfocar(processada, filtro[i].gama); break;
-        case 5: processada = remover(processada, filtro[i].alfa); break;
-        case 6: processada = limpar(processada, filtro[i].beta); break;
-        case 7: processada = brilho(processada, filtro[i].alfa); break;
-        case 8: processada = contraste(processada, filtro[i].alfa); break;
-        case 9: processada = cores(processada, filtro[i].alfa, filtro[i].gama); break;
-        case 10: processada = cinzas(processada, filtro[i].alfa); break;
+        case 3: processada = granular(processada, filtro[i].alfa); break;
+        case 4: processada = nitidez(processada, filtro[i].alfa); break;
+        case 5: processada = desfocar(processada, filtro[i].gama); break;
+        case 6: processada = remover(processada, filtro[i].alfa); break;
+        case 7: processada = limpar(processada, filtro[i].beta); break;
+        case 8: processada = brilho(processada, filtro[i].alfa); break;
+        case 9: processada = contraste(processada, filtro[i].alfa); break;
+        case 10: processada = cores(processada, filtro[i].alfa, filtro[i].gama); break;
+        case 11: processada = cinzas(processada, filtro[i].alfa); break;
         default: break;
         }
     }
@@ -155,6 +157,24 @@ cv::Mat Render::recortar(const cv::Mat& arquivo, int gama, int delta) {
     cv::Rect areaCorte(esquerda, topo, gama, delta);
     resultado = arquivo(areaCorte).clone();
 
+    return resultado;
+}
+
+cv::Mat Render::granular(const cv::Mat& arquivo, double alfa) {
+    if (arquivo.empty()) return arquivo.clone();
+
+    if (alfa < 0.0) alfa = 0.0;
+    if (alfa > 100.0) alfa = 100.0;
+
+    cv::Mat ruido = cv::Mat::zeros(arquivo.size(), arquivo.type());
+
+    if (arquivo.channels() == 3) {
+        cv::randn(ruido, cv::Scalar(0, 0, 0), cv::Scalar(alfa, alfa, alfa));
+    } else {
+        cv::randn(ruido, cv::Scalar(0), cv::Scalar(alfa));
+    }
+
+    cv::add(arquivo, ruido, resultado);
     return resultado;
 }
 

@@ -19,10 +19,11 @@ void Manual() {
 void Filtros() {
     std::cout << "\n             FILTROS DISPONÍVEIS            \n";
     std::cout << " [1] Girar              [2] Recortar\n";
-    std::cout << " [3] Ajustar Nitidez    [4] Desfocar\n";
-    std::cout << " [5] Remover Falhas     [6] Reduzir Ruídos\n";
-    std::cout << " [7] Ajustar Brilho     [8] Ajustar Contraste\n";
-    std::cout << " [9] Alterar Cores      [10] Escala de Cinzas\n";
+    std::cout << " [3] Inserir Granulação [4] Ajustar Nitidez\n";
+    std::cout << " [5] Desfocar           [6] Remover Falhas\n";
+    std::cout << " [7] Reduzir Ruídos     [8] Ajustar Brilho\n";
+    std::cout << " [9] Ajustar Contraste  [10] Alterar Cores\n";
+    std::cout << " [11] Escala de Cinzas\n";
 }
 
 bool ValidarImagem(const std::string& extensao){
@@ -140,36 +141,40 @@ int main(int argc, char* argv[]){
             processador.recorte(esquerda, topo);
         }
         else if (escolha == 3) {
-            std::cout << "Ajuste a intensidade da Nitidez (Escolha de 0 a 100): ";
+            std::cout << "Ajuste a intensidade da Granulação (Escolha de 0 a 100): ";
             std::cin >> filtro.alfa;
         }
         else if (escolha == 4) {
+            std::cout << "Ajuste a intensidade da Nitidez (Escolha de 0 a 100): ";
+            std::cin >> filtro.alfa;
+        }
+        else if (escolha == 5) {
             std::cout << "Escolha o nível de desfoque (Recomendado usar números ímpares como 3, 5, 7 ou 15): ";
             std::cin >> filtro.gama;
         }
-        else if (escolha == 5) {
+        else if (escolha == 6) {
             std::cout << "Escolha o raio de pintura para remover falhas (Recomendado: 3.0): ";
             std::cin >> filtro.alfa;
         }
-        else if (escolha == 6) {
+        else if (escolha == 7) {
             std::cout << "Digite o nível de redução de ruído (Recomendado: de 1.0 a 10.0): ";
             std::cin >> filtro.beta;
         }
-        else if (escolha == 7) {
+        else if (escolha == 8) {
             std::cout << "Ajuste o brilho (0: Escuro | 50: Original | 100: Muito Claro): ";
             std::cin >> filtro.alfa;
         }
-        else if (escolha == 8) {
+        else if (escolha == 9) {
             std::cout << "Ajuste o contraste (0: Menos contraste | 50: Original | 100: Mais contraste): ";
             std::cin >> filtro.alfa;
         }
-        else if (escolha == 9) {
+        else if (escolha == 10) {
             std::cout << "Digite a intensidade da cor (Escolha de 0 a 100): ";
             std::cin >> filtro.alfa;
             std::cout << "Qual canal de cor deseja destacar? (1: Azul | 2: Verde | 3: Vermelho): ";
             std::cin >> filtro.gama;
         }
-        else if (escolha == 10) {
+        else if (escolha == 11) {
             std::cout << "Ajuste o nível do efeito preto e branco (Escolha de 0 a 100): ";
             std::cin >> filtro.alfa;
         }
@@ -311,7 +316,7 @@ int main(int argc, char* argv[]){
             std::cin >> escolha;
             if (escolha == 0) break;
 
-            if (escolha > 0 && escolha <= 10) {
+            if (escolha > 0 && escolha <= 11) {
                 sequencia.push_back(escolha);
                 Parametros filtro = {1.0, 0.0f, 0, 0};
 
@@ -337,36 +342,40 @@ int main(int argc, char* argv[]){
                     processador.recorte(esquerda, topo);
                 }
                 else if (escolha == 3) {
-                    std::cout << "   [Nitidez] -> Fator multiplicador (0 a 100): ";
+                    std::cout << "   [Granulação] -> Intensidade (0 a 100): ";
                     std::cin >> filtro.alfa;
                 }
                 else if (escolha == 4) {
+                    std::cout << "   [Nitidez] -> Fator multiplicador (0 a 100): ";
+                    std::cin >> filtro.alfa;
+                }
+                else if (escolha == 5) {
                     std::cout << "   [Desfocar] -> Dimensão do Kernel (Ímpar): ";
                     std::cin >> filtro.gama;
                 }
-                else if (escolha == 5) {
+                else if (escolha == 6) {
                     std::cout << "   [Remover Falhas] -> Raio de pintura: ";
                     std::cin >> filtro.alfa;
                 }
-                else if (escolha == 6) {
+                else if (escolha == 7) {
                     std::cout << "   [Reduzir Ruídos] -> Desvio padrão h (1.0 a 10.0): ";
                     std::cin >> filtro.beta;
                 }
-                else if (escolha == 7) {
+                else if (escolha == 8) {
                     std::cout << "   [Brilho] -> Incremento alfa (0 a 100): ";
                     std::cin >> filtro.alfa;
                 }
-                else if (escolha == 8) {
+                else if (escolha == 9) {
                     std::cout << "   [Contraste] -> Ganho alfa (0 a 100): ";
                     std::cin >> filtro.alfa;
                 }
-                else if (escolha == 9) {
+                else if (escolha == 10) {
                     std::cout << "   [Alterar Cores] -> Escalar multiplicador: ";
                     std::cin >> filtro.alfa;
                     std::cout << "   [Alterar Cores] -> ID do Canal (1: B | 2: G | 3: R): ";
                     std::cin >> filtro.gama;
                 }
-                else if (escolha == 10) {
+                else if (escolha == 11) {
                     std::cout << "   [Escala de Cinzas] -> Peso da conversão (0 a 100): ";
                     std::cin >> filtro.alfa;
                 }
@@ -501,7 +510,7 @@ int main(int argc, char* argv[]){
 
             Filtros();
             std::cout << "Digite a sequência dos filtros para a demonstração (Digite 0 para iniciar | Digite -1 para SAIR do programa):" << std::endl;
-            
+
             bool sair = false;
             while (true) {
                 std::cout << ">> Adicionar ao Demo: ";
@@ -512,7 +521,7 @@ int main(int argc, char* argv[]){
                     break;
                 }
 
-                if (escolha > 0 && escolha <= 10) {
+                if (escolha > 0 && escolha <= 11) {
                     sequencia.push_back(escolha);
                     Parametros filtro = {1.0, 0.0f, 0, 0};
 
@@ -537,17 +546,18 @@ int main(int argc, char* argv[]){
                         filtro.delta = altura - topo - base;
                         processador.recorte(esquerda, topo);
                     }
-                    else if (escolha == 3) { std::cout << "   [Demo: Nitidez] -> Intensidade: "; std::cin >> filtro.alfa; }
-                    else if (escolha == 4) { std::cout << "   [Demo: Desfocar] -> Kernel: "; std::cin >> filtro.gama; }
-                    else if (escolha == 5) { std::cout << "   [Demo: Remover Falhas] -> Raio: "; std::cin >> filtro.alfa; }
-                    else if (escolha == 6) { std::cout << "   [Demo: Reduzir Ruídos] -> Fator: "; std::cin >> filtro.beta; }
-                    else if (escolha == 7) { std::cout << "   [Demo: Brilho] -> Nível: "; std::cin >> filtro.alfa; }
-                    else if (escolha == 8) { std::cout << "   [Demo: Contraste] -> Nível: "; std::cin >> filtro.alfa; }
-                    else if (escolha == 9) {
+                    else if (escolha == 3) { std::cout << "   [Demo: Granulação] -> Intensidade: "; std::cin >> filtro.alfa; }
+                    else if (escolha == 4) { std::cout << "   [Demo: Nitidez] -> Intensidade: "; std::cin >> filtro.alfa; }
+                    else if (escolha == 5) { std::cout << "   [Demo: Desfocar] -> Kernel: "; std::cin >> filtro.gama; }
+                    else if (escolha == 6) { std::cout << "   [Demo: Remover Falhas] -> Raio: "; std::cin >> filtro.alfa; }
+                    else if (escolha == 7) { std::cout << "   [Demo: Reduzir Ruídos] -> Fator: "; std::cin >> filtro.beta; }
+                    else if (escolha == 8) { std::cout << "   [Demo: Brilho] -> Nível: "; std::cin >> filtro.alfa; }
+                    else if (escolha == 9) { std::cout << "   [Demo: Contraste] -> Nível: "; std::cin >> filtro.alfa; }
+                    else if (escolha == 10) {
                         std::cout << "   [Demo: Cores] -> Multiplicador: "; std::cin >> filtro.alfa;
                         std::cout << "   [Demo: Cores] -> Canal (1/2/3): "; std::cin >> filtro.gama;
                     }
-                    else if (escolha == 10) { std::cout << "   [Demo: Cinzas] -> Mesclagem: "; std::cin >> filtro.alfa; }
+                    else if (escolha == 11) { std::cout << "   [Demo: Cinzas] -> Mesclagem: "; std::cin >> filtro.alfa; }
                     
                     filtros.push_back(filtro);
                 }
