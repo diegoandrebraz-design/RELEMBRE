@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="assets/RELEMBRE_LOGO.jpg" width="100%">
+  <img src="assets/RELEMBRE_BANNER.jpg" width="100%">
 </div>
 
 <br>
