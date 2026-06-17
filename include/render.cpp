@@ -1,5 +1,6 @@
 #include "../include/render.h"
 #include <iostream>
+#include <algorithm>
 
 Render::Render() = default;
 
@@ -282,14 +283,27 @@ cv::Mat Render::cores(const cv::Mat& arquivo, double alfa, int gama) {
 
     alfa = alfa / 50.0;
 
-    std::vector<cv::Mat> canais;
-    cv::split(arquivo, canais);
+    int canalAlvo = gama - 1;
+    if (canalAlvo < 0 || canalAlvo > 2) return arquivo.clone();
 
-    if (gama == 1)      { canais[0] = canais[0] * alfa; }
-    else if (gama == 2) { canais[1] = canais[1] * alfa; }
-    else if (gama == 3) { canais[2] = canais[2] * alfa; }
+    cv::Mat processada = arquivo.clone();
 
-    cv::merge(canais, resultado);
+    for (int i = 0; i < processada.rows; i++) {
+        for (int j = 0; j < processada.cols; j++) {
+            cv::Vec3b& pixel = processada.at<cv::Vec3b>(i, j);
+
+            uchar max_val = std::max({pixel[0], pixel[1], pixel[2]});
+            uchar min_val = std::min({pixel[0], pixel[1], pixel[2]});
+
+            if ((max_val - min_val) < 15) {
+                continue;
+            }
+
+            pixel[canalAlvo] = cv::saturate_cast<uchar>(pixel[canalAlvo] * alfa);
+        }
+    }
+
+    resultado = processada;
     return resultado;
 }
 

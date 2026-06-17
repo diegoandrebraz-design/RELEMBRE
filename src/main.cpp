@@ -8,6 +8,16 @@
 
 using namespace std;
 
+std::string Renomear(const std::string& pasta, const std::string& prefixo, const std::string& extensao) {
+    int contador = 1;
+    std::string nome;
+    do {
+        nome = pasta + prefixo + "_" + std::to_string(contador) + extensao;
+        contador++;
+    } while (std::filesystem::exists(nome));
+    return nome;
+}
+
 void Manual() {
     std::cout << "\n         RESGATE | RESTAURE | RELEMBRE         " << std::endl;
     std::cout << "\n Para iniciar, escolha uma das versões abaixo:\n" << std::endl;
@@ -27,19 +37,18 @@ void Filtros() {
 }
 
 bool ValidarImagem(const std::string& extensao){
-        std::string ext = extensao;
-        for (auto& c : ext) {
-            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-        }
-        return (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".webp");
+    std::string ext = extensao;
+    for (auto& c : ext) {
+        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
     }
+    return (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".webp");
+}
 
 int main(int argc, char* argv[]){
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 
-    std::filesystem::create_directories("output");
-
+    std::string pastaDestino = "C:/Users/diego/CLionProjects/RELEMBRE/output/";
     std::string modo;
 
     if (argc < 2){
@@ -74,12 +83,11 @@ int main(int argc, char* argv[]){
                         std::cerr << "Erro! Não foi possível encontrar ou abrir este arquivo. Verifique o nome e tente novamente.\n" << std::endl;
                         continue;
                     }
-                    cv::Mat x, y;
+                    cv::Mat x;
                     processador.leitor >> x;
-                    y = x;
                     if (!x.empty()) {
                         largura = x.cols;
-                        altura = y.rows;
+                        altura = x.rows;
                         processador.leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
                     }
                     break;
@@ -94,13 +102,12 @@ int main(int argc, char* argv[]){
                     std::cout << "Erro! Não conseguimos acessar a sua câmera. Verifique as permissões do dispositivo e tente novamente.\n" << std::endl;
                     continue;
                 }
-                cv::Mat x, y;
+                cv::Mat x;
                 for (int i = 0; i < 10; i++) {
                     processador.leitor >> x;
-                    y = x;
                     if (!x.empty()) {
                         largura = x.cols;
-                        altura = y.rows;
+                        altura = x.rows;
                         break;
                     }
                     cv::waitKey(30);
@@ -118,6 +125,7 @@ int main(int argc, char* argv[]){
         std::cin >> escolha;
 
         Parametros filtro = {1.0, 0.0f, 0, 0};
+        processador.recorte(0, 0);
 
         if (escolha == 1) {
             std::cout << "Digite o ângulo de rotação (ex: 90, 180, -45): ";
@@ -182,6 +190,9 @@ int main(int argc, char* argv[]){
         std::string extensao = std::filesystem::path(entrada).extension().string();
 
         if (opcao == 1 && ValidarImagem(extensao)) {
+            processador.leitor.release();
+            processador.midia(entrada);
+
             cv::Mat resultado = processador.render(std::vector<int>{escolha}, std::vector<Parametros>{filtro});
 
             if (resultado.empty()){
@@ -189,22 +200,25 @@ int main(int argc, char* argv[]){
                 return -1;
             }
 
-            cv::imshow("Finalizado!", resultado);
+            std::string nomeJanela = "Finalizado!";
+            cv::namedWindow(nomeJanela, cv::WINDOW_NORMAL);
+            cv::imshow(nomeJanela, resultado);
 
-            std::string destino = "output/resultado_processado" + extensao;
+            std::string destino = Renomear(pastaDestino, "resultado_processado", extensao);
             cv::imwrite(destino, resultado);
             std::cout << "Imagem salva com sucesso na pasta: " << destino << std::endl;
 
             cv::waitKey(0);
+            cv::destroyWindow(nomeJanela);
         }
         else {
             cv::VideoWriter gravador;
             std::string video;
 
             if (opcao == 2) {
-                video = "output/resultado_webcam.mp4";
+                video = Renomear(pastaDestino, "resultado_webcam", ".mp4");
             } else {
-                video = "output/resultado_processado" + extensao;
+                video = Renomear(pastaDestino, "resultado_processado", extensao);
             }
 
             int codec = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
@@ -231,6 +245,7 @@ int main(int argc, char* argv[]){
                         gravador.write(resultado);
                     }
 
+                    cv::namedWindow("Resultado - Stream", cv::WINDOW_AUTOSIZE);
                     cv::imshow("Resultado - Stream", resultado);
                 }
 
@@ -256,6 +271,7 @@ int main(int argc, char* argv[]){
             cv::destroyWindow("Resultado - Stream");
         }
     }
+
     else if (modo == "pro") {
         Render processador;
         std::string entrada;
@@ -275,13 +291,12 @@ int main(int argc, char* argv[]){
                     continue;
                 }
 
-                cv::Mat x, y;
+                cv::Mat x;
                 for (int i = 0; i < 10; i++) {
                     processador.leitor >> x;
-                    y = x;
                     if (!x.empty()) {
                         largura = x.cols;
-                        altura = y.rows;
+                        altura = x.rows;
                         break;
                     }
                     cv::waitKey(30);
@@ -293,14 +308,14 @@ int main(int argc, char* argv[]){
                     std::cerr << "Erro! Não foi possível abrir o arquivo informado. Tente novamente.\n" << std::endl;
                     continue;
                 }
-                cv::Mat x, y;
+                cv::Mat x;
                 processador.leitor >> x;
-                y = x;
                 if (!x.empty()) {
                     largura = x.cols;
-                    altura = y.rows;
-                    processador.leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
+                    altura = x.rows;
                 }
+                processador.leitor.release();
+                processador.midia(entrada);
                 break;
             }
         }
@@ -320,6 +335,8 @@ int main(int argc, char* argv[]){
                 sequencia.push_back(escolha);
                 Parametros filtro = {1.0, 0.0f, 0, 0};
 
+                processador.recorte(0, 0);
+
                 if (escolha == 1) {
                     std::cout << "   [Girar] -> Ângulo de rotação: ";
                     std::cin >> filtro.alfa;
@@ -327,9 +344,9 @@ int main(int argc, char* argv[]){
                     std::cin >> filtro.gama;
                 }
                 else if (escolha == 2) {
-                    int esquerda, topo, direita, base;
+                    int sizeofLeft, topo, direita, base;
                     std::cout << "   [Recortar] -> Margem da ESQUERDA (X inicial): ";
-                    std::cin >> esquerda;
+                    std::cin >> sizeofLeft;
                     std::cout << "   [Recortar] -> Margem do TOPO (Y inicial): ";
                     std::cin >> topo;
                     std::cout << "   [Recortar] -> Margem da DIREITA (X corte): ";
@@ -337,74 +354,59 @@ int main(int argc, char* argv[]){
                     std::cout << "   [Recortar] -> Margem da BASE (Y corte): ";
                     std::cin >> base;
 
-                    filtro.gama = largura - esquerda - direita;
+                    filtro.gama = largura - sizeofLeft - direita;
                     filtro.delta = altura - topo - base;
-                    processador.recorte(esquerda, topo);
+                    processador.recorte(sizeofLeft, topo);
                 }
-                else if (escolha == 3) {
-                    std::cout << "   [Granulação] -> Intensidade (0 a 100): ";
-                    std::cin >> filtro.alfa;
-                }
-                else if (escolha == 4) {
-                    std::cout << "   [Nitidez] -> Fator multiplicador (0 a 100): ";
-                    std::cin >> filtro.alfa;
-                }
-                else if (escolha == 5) {
-                    std::cout << "   [Desfocar] -> Dimensão do Kernel (Ímpar): ";
-                    std::cin >> filtro.gama;
-                }
-                else if (escolha == 6) {
-                    std::cout << "   [Remover Falhas] -> Raio de pintura: ";
-                    std::cin >> filtro.alfa;
-                }
-                else if (escolha == 7) {
-                    std::cout << "   [Reduzir Ruídos] -> Desvio padrão h (1.0 a 10.0): ";
-                    std::cin >> filtro.beta;
-                }
-                else if (escolha == 8) {
-                    std::cout << "   [Brilho] -> Incremento alfa (0 a 100): ";
-                    std::cin >> filtro.alfa;
-                }
-                else if (escolha == 9) {
-                    std::cout << "   [Contraste] -> Ganho alfa (0 a 100): ";
-                    std::cin >> filtro.alfa;
-                }
+                else if (escolha == 3) { std::cout << "   [Granulação] -> Intensidade (0 a 100): "; std::cin >> filtro.alfa; }
+                else if (escolha == 4) { std::cout << "   [Nitidez] -> Fator multiplicador (0 a 100): "; std::cin >> filtro.alfa; }
+                else if (escolha == 5) { std::cout << "   [Desfocar] -> Dimensão do Kernel (Ímpar): "; std::cin >> filtro.gama; }
+                else if (escolha == 6) { std::cout << "   [Remover Falhas] -> Raio de pintura: "; std::cin >> filtro.alfa; }
+                else if (escolha == 7) { std::cout << "   [Reduzir Ruídos] -> Desvio padrão h (1.0 a 10.0): "; std::cin >> filtro.beta; }
+                else if (escolha == 8) { std::cout << "   [Brilho] -> Incremento alfa (0 a 100): "; std::cin >> filtro.alfa; }
+                else if (escolha == 9) { std::cout << "   [Contraste] -> Ganho alfa (0 a 100): "; std::cin >> filtro.alfa; }
                 else if (escolha == 10) {
-                    std::cout << "   [Alterar Cores] -> Escalar multiplicador: ";
-                    std::cin >> filtro.alfa;
-                    std::cout << "   [Alterar Cores] -> ID do Canal (1: B | 2: G | 3: R): ";
-                    std::cin >> filtro.gama;
+                    std::cout << "   [Alterar Cores] -> Escalar multiplicador: "; std::cin >> filtro.alfa;
+                    std::cout << "   [Alterar Cores] -> ID do Canal (1: B | 2: G | 3: R): "; std::cin >> filtro.gama;
                 }
-                else if (escolha == 11) {
-                    std::cout << "   [Escala de Cinzas] -> Peso da conversão (0 a 100): ";
-                    std::cin >> filtro.alfa;
-                }
+                else if (escolha == 11) { std::cout << "   [Escala de Cinzas] -> Peso da conversão (0 a 100): "; std::cin >> filtro.alfa; }
                 filtros.push_back(filtro);
             }
         }
 
         std::string extensao = std::filesystem::path(entrada).extension().string();
+        for (auto& c : extensao) {
+            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+        }
 
         if (!camera && ValidarImagem(extensao)) {
+            processador.leitor.release();
+            processador.midia(entrada);
+
             cv::Mat resultado = processador.render(sequencia, filtros);
 
             if (!resultado.empty()) {
-                cv::imshow("Resultado Pro - Imagem", resultado);
-                std::string destino = "output/resultado_pro" + extensao;
-                cv::imwrite(destino, resultado);
+                std::string nomeJanela = "Resultado Pro - Imagem";
+                cv::namedWindow(nomeJanela, cv::WINDOW_NORMAL);
+                cv::imshow(nomeJanela, resultado);
+
+                std::string destino = Renomear(pastaDestino, "resultado_pro", extensao);
+
+                if (cv::imwrite(destino, resultado)) {
+                    std::cout << "\n[SUCESSO] Imagem salva em: " << destino << std::endl;
+                } else {
+                    std::cerr << "\n[ERRO] Falha ao gravar o arquivo na pasta output/." << std::endl;
+                }
+
                 cv::waitKey(0);
+                cv::destroyWindow(nomeJanela);
+            } else {
+                std::cerr << "\n[ERRO] O processador gerou uma imagem vazia." << std::endl;
             }
         }
         else {
             cv::VideoWriter gravador;
-            std::string video;
-
-            if (camera) {
-                video = "output/resultado_pro_webcam.mp4";
-            } else {
-                video = "output/resultado_pro_video" + extensao;
-            }
-
+            std::string video = camera ? Renomear(pastaDestino, "resultado_pro_webcam", ".mp4") : Renomear(pastaDestino, "resultado_pro_video", extensao);
             int codec = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
             bool pausado = false;
 
@@ -429,11 +431,11 @@ int main(int argc, char* argv[]){
                         gravador.write(resultado);
                     }
 
+                    cv::namedWindow("Resultado Pro - Stream", cv::WINDOW_AUTOSIZE);
                     cv::imshow("Resultado Pro - Stream", resultado);
                 }
 
                 int tecla = cv::waitKey(30);
-
                 if (tecla == 'c' || tecla == 27) {
                     break;
                 }
@@ -454,6 +456,7 @@ int main(int argc, char* argv[]){
             cv::destroyWindow("Resultado Pro - Stream");
         }
     }
+
     else if (modo == "demo") {
         Render processador;
         std::string entrada;
@@ -473,13 +476,12 @@ int main(int argc, char* argv[]){
                     continue;
                 }
 
-                cv::Mat x, y;
+                cv::Mat x;
                 for (int i = 0; i < 10; i++) {
                     processador.leitor >> x;
-                    y = x;
                     if (!x.empty()) {
                         largura = x.cols;
-                        altura = y.rows;
+                        altura = x.rows;
                         break;
                     }
                     cv::waitKey(30);
@@ -491,12 +493,11 @@ int main(int argc, char* argv[]){
                     std::cerr << "Erro! Não foi possível abrir o arquivo informado. Tente novamente.\n" << std::endl;
                     continue;
                 }
-                cv::Mat x, y;
+                cv::Mat x;
                 processador.leitor >> x;
-                y = x;
                 if (!x.empty()) {
                     largura = x.cols;
-                    altura = y.rows;
+                    altura = x.rows;
                     processador.leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
                 }
                 break;
@@ -525,6 +526,8 @@ int main(int argc, char* argv[]){
                     sequencia.push_back(escolha);
                     Parametros filtro = {1.0, 0.0f, 0, 0};
 
+                    processador.recorte(0, 0);
+
                     if (escolha == 1) {
                         std::cout << "   [Demo: Girar] -> Ângulo: ";
                         std::cin >> filtro.alfa;
@@ -532,9 +535,9 @@ int main(int argc, char* argv[]){
                         std::cin >> filtro.gama;
                     }
                     else if (escolha == 2) {
-                        int esquerda, topo, direita, base;
+                        int sizeofLeft, topo, direita, base;
                         std::cout << "   [Demo: Recortar] -> Borda Esquerda: ";
-                        std::cin >> esquerda;
+                        std::cin >> sizeofLeft;
                         std::cout << "   [Demo: Recortar] -> Borda Topo: ";
                         std::cin >> topo;
                         std::cout << "   [Demo: Recortar] -> Borda Direita: ";
@@ -542,9 +545,9 @@ int main(int argc, char* argv[]){
                         std::cout << "   [Demo: Recortar] -> Borda Base: ";
                         std::cin >> base;
 
-                        filtro.gama = largura - esquerda - direita;
+                        filtro.gama = largura - sizeofLeft - direita;
                         filtro.delta = altura - topo - base;
-                        processador.recorte(esquerda, topo);
+                        processador.recorte(sizeofLeft, topo);
                     }
                     else if (escolha == 3) { std::cout << "   [Demo: Granulação] -> Intensidade: "; std::cin >> filtro.alfa; }
                     else if (escolha == 4) { std::cout << "   [Demo: Nitidez] -> Intensidade: "; std::cin >> filtro.alfa; }
@@ -558,13 +561,13 @@ int main(int argc, char* argv[]){
                         std::cout << "   [Demo: Cores] -> Canal (1/2/3): "; std::cin >> filtro.gama;
                     }
                     else if (escolha == 11) { std::cout << "   [Demo: Cinzas] -> Mesclagem: "; std::cin >> filtro.alfa; }
-                    
+
                     filtros.push_back(filtro);
                 }
             }
 
             if (sair) {
-                break; 
+                break;
             }
 
             if (sequencia.empty()) {
