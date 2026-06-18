@@ -552,7 +552,7 @@ int main(int argc, char* argv[]){
                     else if (escolha == 3) { std::cout << "   [Demo: Granulação] -> Intensidade: "; std::cin >> filtro.alfa; }
                     else if (escolha == 4) { std::cout << "   [Demo: Nitidez] -> Intensidade: "; std::cin >> filtro.alfa; }
                     else if (escolha == 5) { std::cout << "   [Demo: Desfocar] -> Kernel: "; std::cin >> filtro.gama; }
-                    else if (escolha == 6) { std::cout << "   [Demo: Remover Falhas] -> Raio: "; std::cin >> filtro.alfa; }
+                    else if (escolha == 6) { std::cout << "   [Demo: Remover Falhas] -> Sensibilidade: "; std::cin >> filtro.alfa; }
                     else if (escolha == 7) { std::cout << "   [Demo: Reduzir Ruídos] -> Fator: "; std::cin >> filtro.beta; }
                     else if (escolha == 8) { std::cout << "   [Demo: Brilho] -> Nível: "; std::cin >> filtro.alfa; }
                     else if (escolha == 9) { std::cout << "   [Demo: Contraste] -> Nível: "; std::cin >> filtro.alfa; }
