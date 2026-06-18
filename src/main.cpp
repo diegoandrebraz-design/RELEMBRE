@@ -48,7 +48,17 @@ int main(int argc, char* argv[]){
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 
-    std::string pastaDestino = "C:/Users/diego/CLionProjects/RELEMBRE/output/";
+    std::string pastaDestino = "output/";
+
+    try {
+        if (!std::filesystem::exists(pastaDestino)) {
+            std::filesystem::create_directories(pastaDestino);
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        std::cerr << "Erro crítico: Não foi possível criar a pasta de saída: " << e.what() << std::endl;
+        return -1;
+    }
+
     std::string modo;
 
     if (argc < 2){
@@ -344,9 +354,9 @@ int main(int argc, char* argv[]){
                     std::cin >> filtro.gama;
                 }
                 else if (escolha == 2) {
-                    int sizeofLeft, topo, direita, base;
+                    int esquerda, topo, direita, base;
                     std::cout << "   [Recortar] -> Margem da ESQUERDA (X inicial): ";
-                    std::cin >> sizeofLeft;
+                    std::cin >> esquerda;
                     std::cout << "   [Recortar] -> Margem do TOPO (Y inicial): ";
                     std::cin >> topo;
                     std::cout << "   [Recortar] -> Margem da DIREITA (X corte): ";
@@ -354,7 +364,7 @@ int main(int argc, char* argv[]){
                     std::cout << "   [Recortar] -> Margem da BASE (Y corte): ";
                     std::cin >> base;
 
-                    filtro.gama = largura - sizeofLeft - direita;
+                    filtro.gama = largura - esquerda - direita;
                     filtro.delta = altura - topo - base;
                     processador.recorte(sizeofLeft, topo);
                 }
@@ -452,6 +462,7 @@ int main(int argc, char* argv[]){
 
             if (gravador.isOpened()) {
                 gravador.release();
+                std::cout << "\nVídeo salvo em: " << video << std::endl;
             }
             cv::destroyWindow("Resultado Pro - Stream");
         }
@@ -535,9 +546,9 @@ int main(int argc, char* argv[]){
                         std::cin >> filtro.gama;
                     }
                     else if (escolha == 2) {
-                        int sizeofLeft, topo, direita, base;
+                        int esquerda, topo, direita, base;
                         std::cout << "   [Demo: Recortar] -> Borda Esquerda: ";
-                        std::cin >> sizeofLeft;
+                        std::cin >> esquerda;
                         std::cout << "   [Demo: Recortar] -> Borda Topo: ";
                         std::cin >> topo;
                         std::cout << "   [Demo: Recortar] -> Borda Direita: ";
@@ -545,7 +556,7 @@ int main(int argc, char* argv[]){
                         std::cout << "   [Demo: Recortar] -> Borda Base: ";
                         std::cin >> base;
 
-                        filtro.gama = largura - sizeofLeft - direita;
+                        filtro.gama = largura - esquerda - direita;
                         filtro.delta = altura - topo - base;
                         processador.recorte(sizeofLeft, topo);
                     }
