@@ -161,7 +161,7 @@ int main(int argc, char* argv[]){
             std::cin >> filtro.gama;
         }
         else if (escolha == 6) {
-            std::cout << "Escolha o raio de pintura para remover falhas (Recomendado: 3.0): ";
+            std::cout << "Defina o nível de sensibilidade da detecção: ";
             std::cin >> filtro.alfa;
         }
         else if (escolha == 7) {
@@ -361,7 +361,7 @@ int main(int argc, char* argv[]){
                 else if (escolha == 3) { std::cout << "   [Granulação] -> Intensidade (0 a 100): "; std::cin >> filtro.alfa; }
                 else if (escolha == 4) { std::cout << "   [Nitidez] -> Fator multiplicador (0 a 100): "; std::cin >> filtro.alfa; }
                 else if (escolha == 5) { std::cout << "   [Desfocar] -> Dimensão do Kernel (Ímpar): "; std::cin >> filtro.gama; }
-                else if (escolha == 6) { std::cout << "   [Remover Falhas] -> Raio de pintura: "; std::cin >> filtro.alfa; }
+                else if (escolha == 6) { std::cout << "   [Remover Falhas] -> Sensibilidade de detecção: "; std::cin >> filtro.alfa; }
                 else if (escolha == 7) { std::cout << "   [Reduzir Ruídos] -> Desvio padrão h (1.0 a 10.0): "; std::cin >> filtro.beta; }
                 else if (escolha == 8) { std::cout << "   [Brilho] -> Incremento alfa (0 a 100): "; std::cin >> filtro.alfa; }
                 else if (escolha == 9) { std::cout << "   [Contraste] -> Ganho alfa (0 a 100): "; std::cin >> filtro.alfa; }
