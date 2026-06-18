@@ -161,25 +161,40 @@ cv::Mat Render::recortar(const cv::Mat& arquivo, int gama, int delta) {
     return resultado;
 }
 
-cv::Mat Render::granular(const cv::Mat& arquivo, double alfa) {
+cv::Mat Render::granular (const cv::Mat& arquivo, double alfa) {
     if (arquivo.empty()) return arquivo.clone();
-
     if (alfa < 0.0) alfa = 0.0;
     if (alfa > 100.0) alfa = 100.0;
 
     cv::Mat ruidoCinza = cv::Mat::zeros(arquivo.size(), CV_8SC1);
     cv::randn(ruidoCinza, cv::Scalar(0), cv::Scalar(alfa));
 
-    cv::Mat resultadoProvisorio;
-
+    cv::Mat ruidoFinal;
     if (arquivo.channels() == 3) {
-        cv::Mat ruidoColorido;
         std::vector<cv::Mat> canaisRuido = {ruidoCinza, ruidoCinza, ruidoCinza};
-        cv::merge(canaisRuido, ruidoColorido);
-        cv::add(arquivo, ruidoColorido, resultadoProvisorio, cv::Mat(), arquivo.type());
+        cv::merge(canaisRuido, ruidoFinal);
     } else {
-        cv::add(arquivo, ruidoCinza, resultadoProvisorio, cv::Mat(), arquivo.type());
+        ruidoFinal = ruidoCinza;
     }
+    cv::Mat mascaraPreto;
+    if (arquivo.channels() == 3) {
+        cv::Mat hsv;
+        cv::cvtColor(arquivo, hsv, cv::COLOR_BGR2HSV);
+
+        cv::Scalar limiteInferiorPreto(0, 0, 0);
+        cv::Scalar limiteSuperiorPreto(180, 255, 10);
+
+        cv::inRange(hsv, limiteInferiorPreto, limiteSuperiorPreto, mascaraPreto);
+        cv::bitwise_not(mascaraPreto, mascaraPreto);
+    } else {
+        cv::threshold(arquivo, mascaraPreto, 10, 255, cv::THRESH_BINARY);
+    }
+
+    cv::Mat ruidoFiltrado = cv::Mat::zeros(arquivo.size(), arquivo.type());
+    ruidoFinal.copyTo(ruidoFiltrado, mascaraPreto);
+
+    cv::Mat resultadoProvisorio;
+    cv::add(arquivo, ruidoFiltrado, resultadoProvisorio, cv::Mat(), arquivo.type());
 
     resultado = resultadoProvisorio;
     return resultado;
@@ -238,13 +253,19 @@ cv::Mat Render::remover(const cv::Mat& arquivo, double alfa) {
 
     int espessura = 3;
     if (sensibilidade < 30.0) espessura = 5;
-    cv::dilate(mascara, mascara, cv::getStructuringElement(cv::MORPH_RECT, cv::Size(espessura, espessura)));
+
+    cv::dilate(mascara, mascara,
+        cv::getStructuringElement(cv::MORPH_RECT, cv::Size(espessura, espessura)));
 
     if (mascara.type() != CV_8UC1) {
         mascara.convertTo(mascara, CV_8UC1);
     }
 
-    cv::inpaint(arquivo, mascara, resultado, 3.0, cv::INPAINT_NS);
+    cv::Mat resultado;
+
+    auto raio = static_cast<double>(espessura);
+
+    cv::inpaint(arquivo, mascara, resultado, raio, cv::INPAINT_NS);
 
     return resultado;
 }
@@ -286,11 +307,23 @@ cv::Mat Render::cores(const cv::Mat& arquivo, double alfa, int gama) {
     int canalAlvo = gama - 1;
     if (canalAlvo < 0 || canalAlvo > 2) return arquivo.clone();
 
+    cv::Mat hsv, mascaraBranco;
+    cv::cvtColor(arquivo, hsv, cv::COLOR_BGR2HSV);
+
+    cv::Scalar limiteInferiorBranco(0, 0, 64);
+    cv::Scalar limiteSuperiorBranco(180, 3, 255);
+
+    cv::inRange(hsv, limiteInferiorBranco, limiteSuperiorBranco, mascaraBranco);
+
     cv::Mat processada = arquivo.clone();
 
     for (int i = 0; i < processada.rows; i++) {
         for (int j = 0; j < processada.cols; j++) {
-            cv::Vec3b& pixel = processada.at<cv::Vec3b>(i, j);
+            if (mascaraBranco.at<uchar>(i, j) == 255) {
+                continue;
+            }
+
+            auto& pixel = processada.at<cv::Vec3b>(i, j);
 
             uchar max_val = std::max({pixel[0], pixel[1], pixel[2]});
             uchar min_val = std::min({pixel[0], pixel[1], pixel[2]});

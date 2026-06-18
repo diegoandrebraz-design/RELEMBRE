@@ -44,7 +44,7 @@ private:
     cv::Mat granular(const cv::Mat& arquivo, double alfa);
     cv::Mat nitidez(const cv::Mat& arquivo, double alfa);
     cv::Mat desfocar(const cv::Mat& arquivo, int gama);
-    cv::Mat remover(const cv::Mat& arquivo, double alfa);
+    static cv::Mat remover(const cv::Mat& arquivo, double alfa);
     cv::Mat limpar(const cv::Mat& arquivo, float beta);
     cv::Mat brilho(const cv::Mat& arquivo, double alfa);
     cv::Mat contraste(const cv::Mat& arquivo, double alfa);
