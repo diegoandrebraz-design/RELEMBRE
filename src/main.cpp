@@ -254,7 +254,7 @@ int main(int argc, char* argv[]){
                         gravador.write(resultado);
                     }
 
-                    cv::namedWindow("Resultado - Stream", cv::WINDOW_AUTOSIZE);
+                    cv::namedWindow("Resultado - Stream", cv::WINDOW_NORMAL);
                     cv::imshow("Resultado - Stream", resultado);
                 }
 
@@ -440,7 +440,7 @@ int main(int argc, char* argv[]){
                         gravador.write(resultado);
                     }
 
-                    cv::namedWindow("Resultado Pro - Stream", cv::WINDOW_AUTOSIZE);
+                    cv::namedWindow("Resultado Pro - Stream", cv::WINDOW_NORMAL);
                     cv::imshow("Resultado Pro - Stream", resultado);
                 }
 
