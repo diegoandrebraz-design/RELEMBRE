@@ -67,15 +67,13 @@ cv::Mat Render::comparar(const std::vector<int>& escolhas, const std::vector<Par
     bool camera = (leitor.get(cv::CAP_PROP_FRAME_COUNT) <= 0);
     bool pausado = false;
 
+    cv::namedWindow("Comparacao Lado a Lado", cv::WINDOW_NORMAL);
+
     while (true) {
         if (!pausado) {
-            if (leitor.isOpened()) {
-                double pos = leitor.get(cv::CAP_PROP_POS_FRAMES);
-                leitor >> imagem;
-                leitor.set(cv::CAP_PROP_POS_FRAMES, pos);
-            }
+            cv::Mat processado = render(escolhas, filtro);
 
-            if (imagem.empty()) {
+            if (imagem.empty() || processado.empty()) {
                 if (camera) {
                     cv::waitKey(10);
                     continue;
@@ -84,22 +82,21 @@ cv::Mat Render::comparar(const std::vector<int>& escolhas, const std::vector<Par
                 }
             }
 
-            cv::Mat processado = render(escolhas, filtro);
-            if (processado.empty()) {
-                break;
+            cv::Mat original = imagem.clone();
+
+            if (original.size() != processado.size()) {
+                cv::resize(original, original, processado.size());
             }
 
-            if (imagem.size() != processado.size()) {
-                cv::resize(imagem, imagem, processado.size());
-            }
-
-            if (processado.channels() == 1 && imagem.channels() == 3) {
+            if (processado.channels() == 1 && original.channels() == 3) {
                 cv::cvtColor(processado, processado, cv::COLOR_GRAY2BGR);
-            } else if (processado.channels() == 3 && imagem.channels() == 1) {
-                cv::cvtColor(imagem, imagem, cv::COLOR_GRAY2BGR);
+            } else if (processado.channels() == 3 && original.channels() == 1) {
+                cv::cvtColor(original, original, cv::COLOR_GRAY2BGR);
             }
 
-            cv::hconcat(imagem, processado, resultado);
+            cv::hconcat(original, processado, resultado);
+
+            cv::resizeWindow("Comparacao Lado a Lado", 1600, 450);
             cv::imshow("Comparacao Lado a Lado", resultado);
         }
 

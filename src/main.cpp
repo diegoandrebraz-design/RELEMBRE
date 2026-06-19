@@ -585,12 +585,18 @@ int main(int argc, char* argv[]){
             }
 
             if (!camera) {
+                processador.leitor.set(cv::CAP_PROP_FRAME_WIDTH, largura);
+                processador.leitor.set(cv::CAP_PROP_FRAME_HEIGHT, altura);
                 processador.leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
+            } else {
+                processador.leitor.set(cv::CAP_PROP_FRAME_WIDTH, largura);
+                processador.leitor.set(cv::CAP_PROP_FRAME_HEIGHT, altura);
             }
 
             processador.comparar(sequencia, filtros);
         }
     }
+
     else {
         Manual();
         return 1;
