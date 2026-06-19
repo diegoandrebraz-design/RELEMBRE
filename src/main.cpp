@@ -49,14 +49,12 @@ int main(int argc, char* argv[]){
     SetConsoleCP(CP_UTF8);
 
     std::string pastaDestino = "output/";
-
-    try {
-        if (!std::filesystem::exists(pastaDestino)) {
-            std::filesystem::create_directories(pastaDestino);
+    
+    if (!std::filesystem::exists(pastaDestino)) {
+        if (!std::filesystem::create_directories(pastaDestino)) {
+            std::cerr << "[ERRO] Não foi possível criar a pasta output/." << std::endl;
+            return 1;
         }
-    } catch (const std::filesystem::filesystem_error& e) {
-        std::cerr << "Erro crítico: Não foi possível criar a pasta de saída: " << e.what() << std::endl;
-        return -1;
     }
 
     std::string modo;
@@ -158,18 +156,44 @@ int main(int argc, char* argv[]){
             filtro.delta = altura - topo - base;
             processador.recorte(esquerda, topo);
         }
-        else if (escolha == 3) { std::cout << "Ajuste a intensidade da Granulação (Escolha de 0 a 100): "; std::cin >> filtro.alfa; }
-        else if (escolha == 4) { std::cout << "Ajuste a intensidade da Nitidez (Escolha de 0 a 100): "; std::cin >> filtro.alfa; }
-        else if (escolha == 5) { std::cout << "Escolha o nível de desfoque (Recomendado usar números ímpares como 3, 5, 7 ou 15): "; std::cin >> filtro.gama; }
-        else if (escolha == 6) { std::cout << "Defina o nível de sensibilidade da detecção: "; std::cin >> filtro.alfa; }
-        else if (escolha == 7) { std::cout << "Digite o nível de redução de ruído (Recomendado: de 1.0 a 10.0): "; std::cin >> filtro.beta; }
-        else if (escolha == 8) { std::cout << "Ajuste o brilho (0: Escuro | 50: Original | 100: Muito Claro): "; std::cin >> filtro.alfa; }
-        else if (escolha == 9) { std::cout << "Ajuste o contraste (0: Menos contraste | 50: Original | 100: Mais contraste): "; std::cin >> filtro.alfa; }
-        else if (escolha == 10) {
-            std::cout << "Digite a intensidade da cor (Escolha de 0 a 100): "; std::cin >> filtro.alfa;
-            std::cout << "Qual canal de cor deseja destacar? (1: Azul | 2: Verde | 3: Vermelho): "; std::cin >> filtro.gama;
+        else if (escolha == 3) {
+            std::cout << "Ajuste a intensidade da Granulação (Escolha de 0 a 100): ";
+            std::cin >> filtro.alfa;
         }
-        else if (escolha == 11) { std::cout << "Ajuste o nível do efeito preto e branco (Escolha de 0 a 100): "; std::cin >> filtro.alfa; }
+        else if (escolha == 4) {
+            std::cout << "Ajuste a intensidade da Nitidez (Escolha de 0 a 100): ";
+            std::cin >> filtro.alfa;
+        }
+        else if (escolha == 5) {
+            std::cout << "Escolha o nível de desfoque (Recomendado usar números ímpares como 3, 5, 7 ou 15): ";
+            std::cin >> filtro.gama;
+        }
+        else if (escolha == 6) {
+            std::cout << "Defina o nível de sensibilidade da detecção: ";
+            std::cin >> filtro.alfa;
+        }
+        else if (escolha == 7) {
+            std::cout << "Digite o nível de redução de ruído (Recomendado: de 1.0 a 10.0): ";
+            std::cin >> filtro.beta;
+        }
+        else if (escolha == 8) {
+            std::cout << "Ajuste o brilho (0: Escuro | 50: Original | 100: Muito Claro): ";
+            std::cin >> filtro.alfa;
+        }
+        else if (escolha == 9) {
+            std::cout << "Ajuste o contraste (0: Menos contraste | 50: Original | 100: Mais contraste): ";
+            std::cin >> filtro.alfa;
+        }
+        else if (escolha == 10) {
+            std::cout << "Digite a intensidade da cor (Escolha de 0 a 100): ";
+            std::cin >> filtro.alfa;
+            std::cout << "Qual canal de cor deseja destacar? (1: Azul | 2: Verde | 3: Vermelho): ";
+            std::cin >> filtro.gama;
+        }
+        else if (escolha == 11) {
+            std::cout << "Ajuste o nível do efeito preto e branco (Escolha de 0 a 100): ";
+            std::cin >> filtro.alfa;
+        }
 
         std::string extensao = std::filesystem::path(entrada).extension().string();
 
@@ -200,9 +224,9 @@ int main(int argc, char* argv[]){
             std::string video;
 
             if (opcao == 2) {
-                video = Renomear(pastaDestino, "resultado_webcam", ".mp4");
+                video = Renomear(pastaDestino, "resultado_webcam", ".avi");
             } else {
-                video = Renomear(pastaDestino, "resultado_processado", ".mp4");
+                video = Renomear(pastaDestino, "resultado_processado", extensao);
             }
 
             int codec = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
@@ -328,9 +352,9 @@ int main(int argc, char* argv[]){
                     std::cin >> filtro.gama;
                 }
                 else if (escolha == 2) {
-                    int esquerda, topo, direita, base;
+                    int sizeofLeft, topo, direita, base;
                     std::cout << "   [Recortar] -> Margem da ESQUERDA (X inicial): ";
-                    std::cin >> esquerda;
+                    std::cin >> sizeofLeft;
                     std::cout << "   [Recortar] -> Margem do TOPO (Y inicial): ";
                     std::cin >> topo;
                     std::cout << "   [Recortar] -> Margem da DIREITA (X corte): ";
@@ -338,9 +362,9 @@ int main(int argc, char* argv[]){
                     std::cout << "   [Recortar] -> Margem da BASE (Y corte): ";
                     std::cin >> base;
 
-                    filtro.gama = largura - esquerda - direita;
+                    filtro.gama = largura - sizeofLeft - direita;
                     filtro.delta = altura - topo - base;
-                    processador.recorte(esquerda, topo);
+                    processador.recorte(sizeofLeft, topo);
                 }
                 else if (escolha == 3) { std::cout << "   [Granulação] -> Intensidade (0 a 100): "; std::cin >> filtro.alfa; }
                 else if (escolha == 4) { std::cout << "   [Nitidez] -> Fator multiplicador (0 a 100): "; std::cin >> filtro.alfa; }
@@ -390,9 +414,7 @@ int main(int argc, char* argv[]){
         }
         else {
             cv::VideoWriter gravador;
-
-            std::string video = camera ? Renomear(pastaDestino, "resultado_pro_webcam", ".mp4") 
-                                       : Renomear(pastaDestino, "resultado_pro_video", ".mp4");
+            std::string video = camera ? Renomear(pastaDestino, "resultado_pro_webcam", ".avi") : Renomear(pastaDestino, "resultado_pro_video", extensao);
             int codec = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
             bool pausado = false;
 
@@ -438,7 +460,6 @@ int main(int argc, char* argv[]){
 
             if (gravador.isOpened()) {
                 gravador.release();
-                std::cout << "\nVídeo salvo em: " << video << std::endl;
             }
             cv::destroyWindow("Resultado Pro - Stream");
         }
@@ -522,9 +543,9 @@ int main(int argc, char* argv[]){
                         std::cin >> filtro.gama;
                     }
                     else if (escolha == 2) {
-                        int esquerda, topo, direita, base;
+                        int sizeofLeft, topo, direita, base;
                         std::cout << "   [Demo: Recortar] -> Borda Esquerda: ";
-                        std::cin >> esquerda;
+                        std::cin >> sizeofLeft;
                         std::cout << "   [Demo: Recortar] -> Borda Topo: ";
                         std::cin >> topo;
                         std::cout << "   [Demo: Recortar] -> Borda Direita: ";
@@ -532,9 +553,9 @@ int main(int argc, char* argv[]){
                         std::cout << "   [Demo: Recortar] -> Borda Base: ";
                         std::cin >> base;
 
-                        filtro.gama = largura - esquerda - direita;
+                        filtro.gama = largura - sizeofLeft - direita;
                         filtro.delta = altura - topo - base;
-                        processador.recorte(esquerda, topo);
+                        processador.recorte(sizeofLeft, topo);
                     }
                     else if (escolha == 3) { std::cout << "   [Demo: Granulação] -> Intensidade: "; std::cin >> filtro.alfa; }
                     else if (escolha == 4) { std::cout << "   [Demo: Nitidez] -> Intensidade: "; std::cin >> filtro.alfa; }
