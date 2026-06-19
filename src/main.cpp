@@ -199,7 +199,6 @@ int main(int argc, char* argv[]){
             cv::VideoWriter gravador;
             std::string video;
 
-            // CORREÇÃO: Forçando .mp4 para todos os fluxos de vídeo para evitar incompatibilidade com o codec mp4v
             if (opcao == 2) {
                 video = Renomear(pastaDestino, "resultado_webcam", ".mp4");
             } else {
@@ -341,7 +340,6 @@ int main(int argc, char* argv[]){
 
                     filtro.gama = largura - esquerda - direita;
                     filtro.delta = altura - topo - base;
-                    // CORREÇÃO: Alterado 'sizeofLeft' (que não existia) para 'esquerda'
                     processador.recorte(esquerda, topo);
                 }
                 else if (escolha == 3) { std::cout << "   [Granulação] -> Intensidade (0 a 100): "; std::cin >> filtro.alfa; }
@@ -392,7 +390,7 @@ int main(int argc, char* argv[]){
         }
         else {
             cv::VideoWriter gravador;
-            // CORREÇÃO: Forçando .mp4 em arquivos de vídeo para evitar bugs com o codec fixado 'mp4v'
+
             std::string video = camera ? Renomear(pastaDestino, "resultado_pro_webcam", ".mp4") 
                                        : Renomear(pastaDestino, "resultado_pro_video", ".mp4");
             int codec = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
@@ -536,7 +534,6 @@ int main(int argc, char* argv[]){
 
                         filtro.gama = largura - esquerda - direita;
                         filtro.delta = altura - topo - base;
-                        // CORREÇÃO: Alterado 'sizeofLeft' (que não existia) para 'esquerda'
                         processador.recorte(esquerda, topo);
                     }
                     else if (escolha == 3) { std::cout << "   [Demo: Granulação] -> Intensidade: "; std::cin >> filtro.alfa; }
