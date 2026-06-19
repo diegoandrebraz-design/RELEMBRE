@@ -49,7 +49,7 @@ int main(int argc, char* argv[]){
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 
-    std::string pastaDestino = "output/";
+    std::string pastaDestino = "../output/";
     
     if (!std::filesystem::exists(pastaDestino)) {
         if (!std::filesystem::create_directories(pastaDestino)) {
