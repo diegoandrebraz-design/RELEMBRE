@@ -2,6 +2,7 @@
 #include <string>
 #include <vector>
 #include <windows.h>
+#include <cctype>
 #include "../include/render.h"
 #include <opencv2/opencv.hpp>
 #include <filesystem>
@@ -224,9 +225,9 @@ int main(int argc, char* argv[]){
             std::string video;
 
             if (opcao == 2) {
-                video = Renomear(pastaDestino, "resultado_webcam", ".avi");
+                video = Renomear(pastaDestino, "resultado_webcam", ".mp4");
             } else {
-                video = Renomear(pastaDestino, "resultado_processado", extensao);
+                video = Renomear(pastaDestino, "resultado_processado", ".mp4");
             }
 
             int codec = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
@@ -352,9 +353,9 @@ int main(int argc, char* argv[]){
                     std::cin >> filtro.gama;
                 }
                 else if (escolha == 2) {
-                    int sizeofLeft, topo, direita, base;
+                    int esquerda, topo, direita, base;
                     std::cout << "   [Recortar] -> Margem da ESQUERDA (X inicial): ";
-                    std::cin >> sizeofLeft;
+                    std::cin >> esquerda;
                     std::cout << "   [Recortar] -> Margem do TOPO (Y inicial): ";
                     std::cin >> topo;
                     std::cout << "   [Recortar] -> Margem da DIREITA (X corte): ";
@@ -362,9 +363,9 @@ int main(int argc, char* argv[]){
                     std::cout << "   [Recortar] -> Margem da BASE (Y corte): ";
                     std::cin >> base;
 
-                    filtro.gama = largura - sizeofLeft - direita;
+                    filtro.gama = largura - esquerda - direita;
                     filtro.delta = altura - topo - base;
-                    processador.recorte(sizeofLeft, topo);
+                    processador.recorte(esquerda, topo);
                 }
                 else if (escolha == 3) { std::cout << "   [Granulação] -> Intensidade (0 a 100): "; std::cin >> filtro.alfa; }
                 else if (escolha == 4) { std::cout << "   [Nitidez] -> Fator multiplicador (0 a 100): "; std::cin >> filtro.alfa; }
@@ -414,7 +415,7 @@ int main(int argc, char* argv[]){
         }
         else {
             cv::VideoWriter gravador;
-            std::string video = camera ? Renomear(pastaDestino, "resultado_pro_webcam", ".avi") : Renomear(pastaDestino, "resultado_pro_video", extensao);
+            std::string video = camera ? Renomear(pastaDestino, "resultado_pro_webcam", ".mp4") : Renomear(pastaDestino, "resultado_pro_video", ".mp4");
             int codec = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
             bool pausado = false;
 
@@ -543,9 +544,9 @@ int main(int argc, char* argv[]){
                         std::cin >> filtro.gama;
                     }
                     else if (escolha == 2) {
-                        int sizeofLeft, topo, direita, base;
+                        int esquerda, topo, direita, base;
                         std::cout << "   [Demo: Recortar] -> Borda Esquerda: ";
-                        std::cin >> sizeofLeft;
+                        std::cin >> esquerda;
                         std::cout << "   [Demo: Recortar] -> Borda Topo: ";
                         std::cin >> topo;
                         std::cout << "   [Demo: Recortar] -> Borda Direita: ";
@@ -553,9 +554,9 @@ int main(int argc, char* argv[]){
                         std::cout << "   [Demo: Recortar] -> Borda Base: ";
                         std::cin >> base;
 
-                        filtro.gama = largura - sizeofLeft - direita;
+                        filtro.gama = largura - esquerda - direita;
                         filtro.delta = altura - topo - base;
-                        processador.recorte(sizeofLeft, topo);
+                        processador.recorte(esquerda, topo);
                     }
                     else if (escolha == 3) { std::cout << "   [Demo: Granulação] -> Intensidade: "; std::cin >> filtro.alfa; }
                     else if (escolha == 4) { std::cout << "   [Demo: Nitidez] -> Intensidade: "; std::cin >> filtro.alfa; }
