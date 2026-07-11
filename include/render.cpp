@@ -201,10 +201,10 @@ cv::Mat Render::nitidez(const cv::Mat& arquivo, double alfa) {
     if (alfa < 0.0)   { alfa = 0.0; }
     if (alfa > 100.0) { alfa = 100.0; }
 
-    alfa = alfa / 50.0;
+    alfa = alfa / 12.5;
 
     cv::Mat epsilon;
-    cv::GaussianBlur(arquivo, epsilon, cv::Size(5, 5), 0);
+    cv::GaussianBlur(arquivo, epsilon, cv::Size(3, 3), 0);
     cv::addWeighted(arquivo, 1.0 + alfa, epsilon, -alfa, 0, resultado);
 
     return resultado;
