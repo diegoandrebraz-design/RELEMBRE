@@ -1,602 +1,1352 @@
 #include <iostream>
 #include <string>
 #include <vector>
-#include <windows.h>
 #include <cctype>
-#include "../include/render.h"
-#include <opencv2/opencv.hpp>
 #include <filesystem>
+#include <fstream>
+#include <cstring>
+#include <windows.h>
+#include <commdlg.h>
+#include <opencv2/opencv.hpp>
+#include "../include/render.h"
 
-using namespace std;
+#pragma comment(lib, "Comdlg32.lib")
 
-std::string Renomear(const std::string& pasta, const std::string& prefixo, const std::string& extensao) {
+namespace fs = std::filesystem;
+
+struct DadosRecorte {
+    int esquerda = 0;
+    int direita = 0;
+    int topo = 0;
+    int base = 0;
+    bool ativo = false;
+};
+
+std::string Renomear(
+    const std::string& pasta,
+    const std::string& prefixo,
+    const std::string& extensao
+) {
     int contador = 1;
     std::string nome;
+
     do {
-        nome = pasta + prefixo + "_" + std::to_string(contador) + extensao;
-        contador++;
-    } while (std::filesystem::exists(nome));
+        nome =
+            pasta +
+            prefixo +
+            "_" +
+            std::to_string(contador) +
+            extensao;
+
+        ++contador;
+    } while (fs::exists(nome));
+
     return nome;
 }
 
 void Manual() {
-    std::cout << "\n         RESGATE | RESTAURE | RELEMBRE         " << std::endl;
-    std::cout << "\n Para iniciar, escolha uma das versões abaixo:\n" << std::endl;
-    std::cout << "* Digite: free (para o Modo Iniciante)." << std::endl;
-    std::cout << "* Digite: pro (para o Modo Profissional)." << std::endl;
-    std::cout << "* Digite: demo (para o Modo de Demonstração)." << std::endl;
+    std::cout << "\n RESGATE | RESTAURE | RELEMBRE \n";
+    std::cout << "\nDigite uma das versões:\n";
+    std::cout << "* free - Modo Iniciante\n";
+    std::cout << "* pro  - Modo Profissional\n";
+    std::cout << "* demo - Modo de Demonstração\n";
 }
 
 void Filtros() {
-    std::cout << "\n             FILTROS DISPONÍVEIS            \n";
-    std::cout << " [1] Girar              [2] Recortar\n";
-    std::cout << " [3] Inserir Granulação [4] Ajustar Nitidez\n";
-    std::cout << " [5] Desfocar           [6] Remover Falhas\n";
-    std::cout << " [7] Reduzir Ruídos     [8] Ajustar Brilho\n";
-    std::cout << " [9] Ajustar Contraste  [10] Alterar Cores\n";
-    std::cout << " [11] Escala de Cinzas\n";
+    std::cout << "\n FILTROS DISPONÍVEIS\n";
+    std::cout << " [1] Girar                  [2] Recortar\n";
+    std::cout << " [3] Inserir Granulação    [4] Ajustar Nitidez\n";
+    std::cout << " [5] Desfocar              [6] Remover Falhas\n";
+    std::cout << " [7] Reduzir Ruídos        [8] Ajustar Brilho\n";
+    std::cout << " [9] Ajustar Contraste    [10] Alterar Cores\n";
+    std::cout << "[11] Escala de Cinzas\n";
 }
 
-bool ValidarImagem(const std::string& extensao){
-    std::string ext = extensao;
-    for (auto& c : ext) {
-        c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
+std::string NomeFiltro(int escolha) {
+    switch (escolha) {
+    case 1: return "Girar";
+    case 2: return "Recortar";
+    case 3: return "Inserir Granulação";
+    case 4: return "Ajustar Nitidez";
+    case 5: return "Desfocar";
+    case 6: return "Remover Falhas";
+    case 7: return "Reduzir Ruídos";
+    case 8: return "Ajustar Brilho";
+    case 9: return "Ajustar Contraste";
+    case 10: return "Alterar Cores";
+    case 11: return "Escala de Cinzas";
+    default: return "Desconhecido";
     }
-    return (ext == ".png" || ext == ".jpg" || ext == ".jpeg" || ext == ".bmp" || ext == ".webp");
 }
 
-int main(int argc, char* argv[]){
+bool ValidarImagem(const std::string& extensao) {
+    std::string ext = extensao;
+
+    for (char& c : ext) {
+        c = static_cast<char>(
+            std::tolower(static_cast<unsigned char>(c))
+        );
+    }
+
+    return
+        ext == ".png" ||
+        ext == ".jpg" ||
+        ext == ".jpeg" ||
+        ext == ".bmp" ||
+        ext == ".webp";
+}
+
+std::vector<std::string> SelecionarArquivos(bool multiplos) {
+    char buffer[65536] = {};
+    OPENFILENAMEA dialogo{};
+
+    dialogo.lStructSize = sizeof(dialogo);
+    dialogo.lpstrFile = buffer;
+    dialogo.nMaxFile = sizeof(buffer);
+
+    dialogo.lpstrFilter =
+        "Mídias suportadas\0"
+        "*.png;*.jpg;*.jpeg;*.bmp;*.webp;*.mp4;*.avi;*.mov;*.mkv;*.wmv\0"
+        "Todos os arquivos\0"
+        "*.*\0";
+
+    dialogo.nFilterIndex = 1;
+
+    dialogo.Flags =
+        OFN_PATHMUSTEXIST |
+        OFN_FILEMUSTEXIST |
+        OFN_EXPLORER;
+
+    if (multiplos) {
+        dialogo.Flags |= OFN_ALLOWMULTISELECT;
+    }
+
+    if (!GetOpenFileNameA(&dialogo)) {
+        return {};
+    }
+
+    std::vector<std::string> arquivos;
+    char* cursor = buffer;
+
+    if (
+        !multiplos ||
+        cursor[std::strlen(cursor) + 1] == '\0'
+    ) {
+        arquivos.emplace_back(cursor);
+        return arquivos;
+    }
+
+    const std::string pasta = cursor;
+    cursor += pasta.size() + 1;
+
+    while (*cursor) {
+        const std::string nome = cursor;
+        arquivos.push_back(pasta + "\\" + nome);
+        cursor += nome.size() + 1;
+    }
+
+    return arquivos;
+}
+
+bool LerParametros(
+    Render& processador,
+    int escolha,
+    Parametros& filtro,
+    int largura,
+    int altura,
+    DadosRecorte* dadosRecorte = nullptr
+) {
+    filtro = {1.0, 0.0f, 0, 0};
+
+    processador.recorte(0, 0);
+
+    if (dadosRecorte) {
+        *dadosRecorte = {};
+    }
+
+    switch (escolha) {
+    case 1:
+        std::cout << " [Girar] Ângulo: ";
+        std::cin >> filtro.alfa;
+
+        std::cout
+            << " [Girar] Espelhamento "
+            << "(1 Horizontal | 0 Vertical | -1 Ambos | 2 Nenhum): ";
+
+        std::cin >> filtro.gama;
+        break;
+
+    case 2: {
+        DadosRecorte recorte;
+
+        std::cout << " [Recortar] Esquerda: ";
+        std::cin >> recorte.esquerda;
+
+        std::cout << " [Recortar] Direita: ";
+        std::cin >> recorte.direita;
+
+        std::cout << " [Recortar] Topo: ";
+        std::cin >> recorte.topo;
+
+        std::cout << " [Recortar] Base: ";
+        std::cin >> recorte.base;
+
+        if (
+            recorte.esquerda < 0 ||
+            recorte.direita < 0 ||
+            recorte.topo < 0 ||
+            recorte.base < 0
+        ) {
+            std::cout <<
+                "[ERRO] Os quatro valores do recorte devem ser >= 0.\n";
+            return false;
+        }
+
+        filtro.gama =
+            largura -
+            recorte.esquerda -
+            recorte.direita;
+
+        filtro.delta =
+            altura -
+            recorte.topo -
+            recorte.base;
+
+        if (
+            filtro.gama <= 1 ||
+            filtro.delta <= 1
+        ) {
+            std::cout
+                << "[ERRO] Área de recorte inválida para "
+                << largura << "x" << altura << ".\n";
+            return false;
+        }
+
+        processador.recorte(
+            recorte.esquerda,
+            recorte.topo
+        );
+
+        if (dadosRecorte) {
+            *dadosRecorte = recorte;
+            dadosRecorte->ativo = true;
+        }
+
+        break;
+    }
+
+    case 3:
+        std::cout
+            << " [Granulação] Intensidade (0 a 100): ";
+        std::cin >> filtro.alfa;
+        break;
+
+    case 4:
+        std::cout
+            << " [Nitidez] Intensidade (0 a 100): ";
+        std::cin >> filtro.alfa;
+        break;
+
+    case 5:
+        std::cout << " [Desfocar] Kernel: ";
+        std::cin >> filtro.gama;
+        break;
+
+    case 6:
+        std::cout
+            << " [Remover Falhas] Sensibilidade: ";
+        std::cin >> filtro.alfa;
+        break;
+
+    case 7:
+        std::cout
+            << " [Reduzir Ruídos] Fator (1 a 10): ";
+        std::cin >> filtro.beta;
+        break;
+
+    case 8:
+        std::cout << " [Brilho] Intensidade: ";
+        std::cin >> filtro.alfa;
+        break;
+
+    case 9:
+        std::cout << " [Contraste] Ganho: ";
+        std::cin >> filtro.alfa;
+        break;
+
+    case 10:
+        std::cout << " [Cores] Intensidade: ";
+        std::cin >> filtro.alfa;
+
+        std::cout
+            << " [Cores] Canal "
+            << "(1 Azul | 2 Verde | 3 Vermelho): ";
+
+        std::cin >> filtro.gama;
+        break;
+
+    case 11:
+        std::cout << " [Cinzas] Peso: ";
+        std::cin >> filtro.alfa;
+        break;
+
+    default:
+        std::cout << "Opção inválida.\n";
+        return false;
+    }
+
+    return true;
+}
+
+bool MontarSequencia(
+    Render& processador,
+    int largura,
+    int altura,
+    std::vector<int>& sequencia,
+    std::vector<Parametros>& filtros,
+    bool permitirSair
+) {
+    sequencia.clear();
+    filtros.clear();
+
+    Filtros();
+
+    std::cout << "Digite 0 para iniciar";
+
+    if (permitirSair) {
+        std::cout << " ou -1 para sair";
+    }
+
+    std::cout << ".\n";
+
+    while (true) {
+        int escolha;
+
+        std::cout << ">> Adicionar filtro: ";
+        std::cin >> escolha;
+
+        if (escolha == 0) {
+            break;
+        }
+
+        if (permitirSair && escolha == -1) {
+            return false;
+        }
+
+        if (escolha < 1 || escolha > 11) {
+            std::cout << "Opção inválida.\n";
+            continue;
+        }
+
+        Parametros filtro;
+
+        if (
+            !LerParametros(
+                processador,
+                escolha,
+                filtro,
+                largura,
+                altura
+            )
+        ) {
+            continue;
+        }
+
+        sequencia.push_back(escolha);
+        filtros.push_back(filtro);
+    }
+
+    return !sequencia.empty();
+}
+
+bool AbrirArquivo(
+    Render& processador,
+    const std::string& arquivo,
+    int& largura,
+    int& altura
+) {
+    processador.midia(arquivo);
+
+    if (!processador.leitor.isOpened()) {
+        return false;
+    }
+
+    cv::Mat primeiro;
+    processador.leitor >> primeiro;
+
+    if (primeiro.empty()) {
+        processador.leitor.release();
+        return false;
+    }
+
+    largura = primeiro.cols;
+    altura = primeiro.rows;
+
+    processador.leitor.set(
+        cv::CAP_PROP_POS_FRAMES,
+        0
+    );
+
+    return true;
+}
+
+bool AbrirWebcam(
+    Render& processador,
+    int& largura,
+    int& altura
+) {
+    processador.camera(0);
+
+    if (!processador.leitor.isOpened()) {
+        return false;
+    }
+
+    cv::Mat quadro;
+
+    for (int i = 0; i < 10; ++i) {
+        processador.leitor >> quadro;
+
+        if (!quadro.empty()) {
+            largura = quadro.cols;
+            altura = quadro.rows;
+            return true;
+        }
+
+        cv::waitKey(30);
+    }
+
+    return false;
+}
+
+bool ProcessarArquivoFree(
+    Render& processador,
+    const std::string& arquivo,
+    int escolha,
+    Parametros filtro,
+    const DadosRecorte& dadosRecorte,
+    const std::string& pastaDestino
+) {
+    int largura = 0;
+    int altura = 0;
+
+    if (
+        !AbrirArquivo(
+            processador,
+            arquivo,
+            largura,
+            altura
+        )
+    ) {
+        std::cerr
+            << "[ERRO] Não foi possível abrir: "
+            << arquivo << "\n";
+
+        return false;
+    }
+
+    if (escolha == 2) {
+        filtro.gama =
+            largura -
+            dadosRecorte.esquerda -
+            dadosRecorte.direita;
+
+        filtro.delta =
+            altura -
+            dadosRecorte.topo -
+            dadosRecorte.base;
+
+        if (
+            filtro.gama <= 1 ||
+            filtro.delta <= 1
+        ) {
+            std::cerr
+                << "[ERRO] O recorte não cabe na mídia: "
+                << largura << "x" << altura << ".\n";
+
+            return false;
+        }
+
+        processador.recorte(
+            dadosRecorte.esquerda,
+            dadosRecorte.topo
+        );
+    }
+
+    const std::string extensao =
+        fs::path(arquivo).extension().string();
+
+    if (!ValidarImagem(extensao)) {
+        std::cerr
+            << "[ERRO] No modo Free, selecione imagens "
+            << "para processamento em arquivo.\n";
+
+        return false;
+    }
+
+    cv::Mat resultado =
+        processador.render(
+            escolha,
+            filtro
+        );
+
+    if (resultado.empty()) {
+        std::cerr
+            << "[ERRO] O processamento gerou uma imagem vazia.\n";
+
+        return false;
+    }
+
+    const std::string destino =
+        Renomear(
+            pastaDestino,
+            "resultado_free_" + NomeFiltro(escolha),
+            extensao
+        );
+
+    if (!cv::imwrite(destino, resultado)) {
+        std::cerr
+            << "[ERRO] Não foi possível salvar: "
+            << destino << "\n";
+
+        return false;
+    }
+
+    std::cout
+        << "[SUCESSO] Imagem salva: "
+        << destino << "\n";
+
+    return true;
+}
+
+bool ProcessarArquivo(
+    Render& processador,
+    const std::string& arquivo,
+    const std::vector<int>& escolhas,
+    const std::vector<Parametros>& filtros,
+    const std::string& pastaDestino,
+    const std::string& prefixo
+) {
+    int largura = 0;
+    int altura = 0;
+
+    if (
+        !AbrirArquivo(
+            processador,
+            arquivo,
+            largura,
+            altura
+        )
+    ) {
+        std::cerr
+            << "[ERRO] Não foi possível abrir: "
+            << arquivo << "\n";
+
+        return false;
+    }
+
+    const std::string extensao =
+        fs::path(arquivo).extension().string();
+
+    if (ValidarImagem(extensao)) {
+        cv::Mat resultado =
+            processador.render(
+                escolhas,
+                filtros
+            );
+
+        if (resultado.empty()) {
+            std::cerr
+                << "[ERRO] O processamento gerou "
+                << "uma imagem vazia.\n";
+
+            return false;
+        }
+
+        const std::string destino =
+            Renomear(
+                pastaDestino,
+                prefixo,
+                extensao
+            );
+
+        if (!cv::imwrite(destino, resultado)) {
+            std::cerr
+                << "[ERRO] Não foi possível salvar: "
+                << destino << "\n";
+
+            return false;
+        }
+
+        std::cout
+            << "[SUCESSO] Imagem salva: "
+            << destino << "\n";
+
+        return true;
+    }
+
+    const std::string destino =
+        Renomear(
+            pastaDestino,
+            prefixo,
+            ".mp4"
+        );
+
+    cv::VideoWriter gravador;
+
+    const int codec =
+        cv::VideoWriter::fourcc(
+            'm',
+            'p',
+            '4',
+            'v'
+        );
+
+    bool pausado = false;
+
+    cv::namedWindow(
+        "Resultado - Stream",
+        cv::WINDOW_NORMAL
+    );
+
+    while (true) {
+        if (!pausado) {
+            cv::Mat resultado =
+                processador.render(
+                    escolhas,
+                    filtros
+                );
+
+            if (resultado.empty()) {
+                break;
+            }
+
+            if (!gravador.isOpened()) {
+                if (
+                    !gravador.open(
+                        destino,
+                        codec,
+                        30.0,
+                        resultado.size()
+                    )
+                ) {
+                    std::cerr
+                        << "[ERRO] Não foi possível criar "
+                        << "o vídeo de saída.\n";
+
+                    cv::destroyWindow(
+                        "Resultado - Stream"
+                    );
+
+                    return false;
+                }
+            }
+
+            gravador.write(resultado);
+
+            cv::imshow(
+                "Resultado - Stream",
+                resultado
+            );
+        }
+
+        const int tecla =
+            cv::waitKey(30) & 0xFF;
+
+        if (
+            tecla == 'c' ||
+            tecla == 'C' ||
+            tecla == 27
+        ) {
+            break;
+        }
+
+        if (
+            tecla == 'p' ||
+            tecla == 'P'
+        ) {
+            pausado = !pausado;
+        }
+        else if (
+            tecla == 'r' ||
+            tecla == 'R'
+        ) {
+            processador.leitor.set(
+                cv::CAP_PROP_POS_FRAMES,
+                0
+            );
+
+            pausado = false;
+        }
+    }
+
+    if (gravador.isOpened()) {
+        gravador.release();
+
+        std::cout
+            << "[SUCESSO] Vídeo salvo: "
+            << destino << "\n";
+    }
+
+    cv::destroyWindow(
+        "Resultado - Stream"
+    );
+
+    return true;
+}
+
+bool ProcessarWebcam(
+    Render& processador,
+    const std::vector<int>& escolhas,
+    const std::vector<Parametros>& filtros,
+    const std::string& pastaDestino,
+    const std::string& prefixo
+) {
+    const std::string destino =
+        Renomear(
+            pastaDestino,
+            prefixo,
+            ".mp4"
+        );
+
+    cv::VideoWriter gravador;
+
+    const int codec =
+        cv::VideoWriter::fourcc(
+            'm',
+            'p',
+            '4',
+            'v'
+        );
+
+    bool pausado = false;
+
+    cv::namedWindow(
+        "Resultado - Webcam",
+        cv::WINDOW_NORMAL
+    );
+
+    while (true) {
+        if (!pausado) {
+            cv::Mat resultado =
+                processador.render(
+                    escolhas,
+                    filtros
+                );
+
+            if (resultado.empty()) {
+                cv::waitKey(10);
+                continue;
+            }
+
+            if (!gravador.isOpened()) {
+                if (
+                    !gravador.open(
+                        destino,
+                        codec,
+                        30.0,
+                        resultado.size()
+                    )
+                ) {
+                    std::cerr
+                        << "[ERRO] Não foi possível criar "
+                        << "o vídeo da webcam.\n";
+
+                    cv::destroyWindow(
+                        "Resultado - Webcam"
+                    );
+
+                    return false;
+                }
+            }
+
+            gravador.write(resultado);
+
+            cv::imshow(
+                "Resultado - Webcam",
+                resultado
+            );
+        }
+
+        const int tecla =
+            cv::waitKey(30) & 0xFF;
+
+        if (
+            tecla == 'c' ||
+            tecla == 'C' ||
+            tecla == 27
+        ) {
+            break;
+        }
+
+        if (
+            tecla == 'p' ||
+            tecla == 'P'
+        ) {
+            pausado = !pausado;
+        }
+        else if (
+            tecla == 'r' ||
+            tecla == 'R'
+        ) {
+            processador.camera(0);
+            pausado = false;
+        }
+    }
+
+    if (gravador.isOpened()) {
+        gravador.release();
+
+        std::cout
+            << "[SUCESSO] Vídeo da webcam salvo: "
+            << destino << "\n";
+    }
+
+    cv::destroyWindow(
+        "Resultado - Webcam"
+    );
+
+    return true;
+}
+
+void RelatorioFiltros(
+    const std::string& modo,
+    const std::string& arquivo,
+    const std::vector<int>& escolhas,
+    const std::vector<Parametros>& filtros,
+    const std::string& pastaDestino
+) {
+    if (escolhas.size() != filtros.size()) {
+        std::cerr
+            << "[ERRO] Não foi possível gerar "
+            << "o relatório: dados incompatíveis.\n";
+
+        return;
+    }
+
+    const std::string destino =
+        Renomear(
+            pastaDestino,
+            "relatorio_" + modo,
+            ".txt"
+        );
+
+    std::ofstream relatorio(destino);
+
+    if (!relatorio.is_open()) {
+        std::cerr
+            << "[ERRO] Não foi possível criar "
+            << "o relatório.\n";
+
+        return;
+    }
+
+    relatorio
+        << "RELEMBRE - RELATÓRIO DE FILTROS\n";
+
+    relatorio
+        << "Modo: "
+        << modo
+        << "\n";
+
+    relatorio
+        << "Arquivo: "
+        << arquivo
+        << "\n\n";
+
+    for (size_t i = 0; i < escolhas.size(); ++i) {
+        relatorio
+            << (i + 1)
+            << ". "
+            << NomeFiltro(escolhas[i])
+            << " ["
+            << escolhas[i]
+            << "]\n";
+
+        relatorio
+            << "   alfa = "
+            << filtros[i].alfa
+            << "\n";
+
+        relatorio
+            << "   beta = "
+            << filtros[i].beta
+            << "\n";
+
+        relatorio
+            << "   gama = "
+            << filtros[i].gama
+            << "\n";
+
+        relatorio
+            << "   delta = "
+            << filtros[i].delta
+            << "\n";
+    }
+
+    relatorio.close();
+
+    std::cout
+        << "Relatório salvo em: "
+        << destino
+        << "\n";
+}
+
+int main(int argc, char* argv[]) {
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 
-    std::string pastaDestino = "../output/";
-    
-    if (!std::filesystem::exists(pastaDestino)) {
-        if (!std::filesystem::create_directories(pastaDestino)) {
-            std::cerr << "[ERRO] Não foi possível criar a pasta output/." << std::endl;
-            return 1;
-        }
+    const std::string pastaDestino =
+        "../output/";
+
+    if (
+        !fs::exists(pastaDestino) &&
+        !fs::create_directories(pastaDestino)
+    ) {
+        std::cerr
+            << "[ERRO] Não foi possível criar "
+            << "a pasta output/.\n";
+
+        return 1;
     }
 
     std::string modo;
 
-    if (argc < 2){
-        Manual();
-        std::cout << "\nEscolha a versão (free, pro, demo): ";
-        std::cin >> modo;
+    if (argc >= 2) {
+        modo = argv[1];
     }
     else {
-        modo = argv[1];
+        Manual();
+
+        std::cout
+            << "\nEscolha a versão: ";
+
+        std::cin >> modo;
     }
 
     if (modo == "free") {
         Render processador;
-        std::string entrada = " ";
-        int opcao;
-        int largura = 0;
-        int altura = 0;
 
         while (true) {
-            std::cout << "\nIniciando o Modo Iniciante..." << std::endl;
-            std::cout << "[1] Abrir um arquivo de mídia (Imagem ou Vídeo)" << std::endl;
-            std::cout << "[2] Usar a Webcam em tempo real" << std::endl;
-            std::cout << "Escolha uma opção: ";
+            std::cout
+                << "\nMODO FREE\n";
+
+            std::cout
+                << "[1] Selecionar arquivo(s)\n";
+
+            std::cout
+                << "[2] Usar webcam\n";
+
+            std::cout
+                << "[0] Sair\n";
+
+            std::cout
+                << "Escolha: ";
+
+            int opcao;
             std::cin >> opcao;
 
-            if (opcao == 1) {
-                while (true) {
-                    std::cout << "Digite o caminho completo ou nome do arquivo: ";
-                    std::cin >> entrada;
-                    processador.midia(entrada);
-                    if (!processador.leitor.isOpened()) {
-                        std::cerr << "Erro! Não foi possível encontrar ou abrir este arquivo. Verifique o nome e tente novamente.\n" << std::endl;
-                        continue;
-                    }
-                    cv::Mat x;
-                    processador.leitor >> x;
-                    if (!x.empty()) {
-                        largura = x.cols;
-                        altura = x.rows;
-                        processador.leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
-                    }
-                    break;
-                }
+            if (opcao == 0) {
                 break;
             }
-            else if (opcao == 2) {
-                processador.camera(0);
-                std::cout << "Conectando e inicializando a sua Webcam..." << std::endl;
-
-                if (!processador.leitor.isOpened()) {
-                    std::cout << "Erro! Não conseguimos acessar a sua câmera. Verifique as permissões do dispositivo e tente novamente.\n" << std::endl;
-                    continue;
-                }
-                cv::Mat x;
-                for (int i = 0; i < 10; i++) {
-                    processador.leitor >> x;
-                    if (!x.empty()) {
-                        largura = x.cols;
-                        altura = x.rows;
-                        break;
-                    }
-                    cv::waitKey(30);
-                }
-                break;
-            }
-            else {
-                std::cout << "Opção inválida. Escolha entre 1 ou 2.\n" << std::endl;
-            }
-        }
-
-        Filtros();
-        int escolha;
-        std::cout << "Selecione o número do filtro que deseja aplicar: ";
-        std::cin >> escolha;
-
-        Parametros filtro = {1.0, 0.0f, 0, 0};
-        processador.recorte(0, 0);
-
-        if (escolha == 1) {
-            std::cout << "Digite o ângulo de rotação (ex: 90, 180, -45): ";
-            std::cin >> filtro.alfa;
-            std::cout << "Deseja espelhar a imagem? (1: Horizontal | 0: Vertical | -1: Ambos | 2: Não espelhar): ";
-            std::cin >> filtro.gama;
-        }
-        else if (escolha == 2) {
-            int esquerda, topo, direita, base;
-            std::cout << "Quantos pixels quer cortar da ESQUERDA: ";
-            std::cin >> esquerda;
-            std::cout << "Quantos pixels quer cortar do TOPO: ";
-            std::cin >> topo;
-            std::cout << "Quantos pixels quer cortar da DIREITA: ";
-            std::cin >> direita;
-            std::cout << "Quantos pixels quer cortar da BASE: ";
-            std::cin >> base;
-
-            filtro.gama = largura - esquerda - direita;
-            filtro.delta = altura - topo - base;
-            processador.recorte(esquerda, topo);
-        }
-        else if (escolha == 3) {
-            std::cout << "Ajuste a intensidade da Granulação (Escolha de 0 a 100): ";
-            std::cin >> filtro.alfa;
-        }
-        else if (escolha == 4) {
-            std::cout << "Ajuste a intensidade da Nitidez (Escolha de 0 a 100): ";
-            std::cin >> filtro.alfa;
-        }
-        else if (escolha == 5) {
-            std::cout << "Escolha o nível de desfoque (Recomendado usar números ímpares como 3, 5, 7 ou 15): ";
-            std::cin >> filtro.gama;
-        }
-        else if (escolha == 6) {
-            std::cout << "Defina o nível de sensibilidade da detecção: ";
-            std::cin >> filtro.alfa;
-        }
-        else if (escolha == 7) {
-            std::cout << "Digite o nível de redução de ruído (Recomendado: de 1.0 a 10.0): ";
-            std::cin >> filtro.beta;
-        }
-        else if (escolha == 8) {
-            std::cout << "Ajuste o brilho (0: Escuro | 50: Original | 100: Muito Claro): ";
-            std::cin >> filtro.alfa;
-        }
-        else if (escolha == 9) {
-            std::cout << "Ajuste o contraste (0: Menos contraste | 50: Original | 100: Mais contraste): ";
-            std::cin >> filtro.alfa;
-        }
-        else if (escolha == 10) {
-            std::cout << "Digite a intensidade da cor (Escolha de 0 a 100): ";
-            std::cin >> filtro.alfa;
-            std::cout << "Qual canal de cor deseja destacar? (1: Azul | 2: Verde | 3: Vermelho): ";
-            std::cin >> filtro.gama;
-        }
-        else if (escolha == 11) {
-            std::cout << "Ajuste o nível do efeito preto e branco (Escolha de 0 a 100): ";
-            std::cin >> filtro.alfa;
-        }
-
-        std::string extensao = std::filesystem::path(entrada).extension().string();
-
-        if (opcao == 1 && ValidarImagem(extensao)) {
-            processador.leitor.release();
-            processador.midia(entrada);
-
-            cv::Mat resultado = processador.render(std::vector<int>{escolha}, std::vector<Parametros>{filtro});
-
-            if (resultado.empty()){
-                std::cerr << "Erro fatal! O filtro falhou e gerou uma imagem vazia." << std::endl;
-                return -1;
-            }
-
-            std::string nomeJanela = "Finalizado!";
-            cv::namedWindow(nomeJanela, cv::WINDOW_NORMAL);
-            cv::imshow(nomeJanela, resultado);
-
-            std::string destino = Renomear(pastaDestino, "resultado_processado", extensao);
-            cv::imwrite(destino, resultado);
-            std::cout << "Imagem salva com sucesso na pasta: " << destino << std::endl;
-
-            cv::waitKey(0);
-            cv::destroyWindow(nomeJanela);
-        }
-        else {
-            cv::VideoWriter gravador;
-            std::string video;
 
             if (opcao == 2) {
-                video = Renomear(pastaDestino, "resultado_webcam", ".mp4");
-            } else {
-                video = Renomear(pastaDestino, "resultado_processado", ".mp4");
-            }
+                int largura = 0;
+                int altura = 0;
 
-            int codec = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
-            bool pausado = false;
+                if (
+                    !AbrirWebcam(
+                        processador,
+                        largura,
+                        altura
+                    )
+                ) {
+                    std::cerr
+                        << "[ERRO] Não foi possível "
+                        << "acessar a webcam.\n";
 
-            while (true) {
-                if (!pausado) {
-                    cv::Mat resultado = processador.render(std::vector<int>{escolha}, std::vector<Parametros>{filtro});
-
-                    if (resultado.empty()) {
-                        if (opcao == 2) {
-                            cv::waitKey(10);
-                            continue;
-                        } else {
-                            break;
-                        }
-                    }
-
-                    if (!gravador.isOpened()) {
-                        gravador.open(video, codec, 30.0, resultado.size());
-                    }
-
-                    if (gravador.isOpened()) {
-                        gravador.write(resultado);
-                    }
-
-                    cv::namedWindow("Resultado - Stream", cv::WINDOW_NORMAL);
-                    cv::imshow("Resultado - Stream", resultado);
-                }
-
-                int tecla = cv::waitKey(30);
-                if (tecla == 'c' || tecla == 27) {
-                    break;
-                }
-                if (tecla == 'p') {
-                    pausado = !pausado;
-                }
-                if (tecla == 'r') {
-                    if (opcao != 2) {
-                        processador.leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
-                        pausado = false;
-                    }
-                }
-            }
-
-            if (gravador.isOpened()) {
-                gravador.release();
-                std::cout << "\nVídeo salvo em: " << video << std::endl;
-            }
-            cv::destroyWindow("Resultado - Stream");
-        }
-    }
-
-    else if (modo == "pro") {
-        Render processador;
-        std::string entrada;
-        bool camera = false;
-        int largura = 0;
-        int altura = 0;
-
-        while (true) {
-            std::cout << "Informe o caminho da mídia (ou digite 'webcam' para usar a câmera): ";
-            std::cin >> entrada;
-
-            if (entrada == "webcam") {
-                processador.camera(0);
-                camera = true;
-                if (!processador.leitor.isOpened()) {
-                    std::cout << "Erro ao abrir a câmera. Tente novamente.\n" << std::endl;
                     continue;
                 }
 
-                cv::Mat x;
-                for (int i = 0; i < 10; i++) {
-                    processador.leitor >> x;
-                    if (!x.empty()) {
-                        largura = x.cols;
-                        altura = x.rows;
-                        break;
-                    }
-                    cv::waitKey(30);
-                }
-                break;
-            } else {
-                processador.midia(entrada);
-                if (!processador.leitor.isOpened()) {
-                    std::cerr << "Erro! Não foi possível abrir o arquivo informado. Tente novamente.\n" << std::endl;
-                    continue;
-                }
-                cv::Mat x;
-                processador.leitor >> x;
-                if (!x.empty()) {
-                    largura = x.cols;
-                    altura = x.rows;
-                }
-                processador.leitor.release();
-                processador.midia(entrada);
-                break;
-            }
-        }
+                std::cout
+                    << "Webcam aberta.\n";
 
-        std::vector<int> sequencia;
-        std::vector<Parametros> filtros;
-        int escolha = -1;
-
-        Filtros();
-        std::cout << "Digite a sequência dos filtros desejados em ordem (Digite 0 para encerrar a lista):" << std::endl;
-        while (true) {
-            std::cout << ">> Adicionar filtro: ";
-            std::cin >> escolha;
-            if (escolha == 0) break;
-
-            if (escolha > 0 && escolha <= 11) {
-                sequencia.push_back(escolha);
-                Parametros filtro = {1.0, 0.0f, 0, 0};
-
-                processador.recorte(0, 0);
-
-                if (escolha == 1) {
-                    std::cout << "   [Girar] -> Ângulo de rotação: ";
-                    std::cin >> filtro.alfa;
-                    std::cout << "   [Girar] -> Modo de espelhamento (1: Horiz, 0: Vert, -1: Ambos, 2: Nenhum): ";
-                    std::cin >> filtro.gama;
-                }
-                else if (escolha == 2) {
-                    int esquerda, topo, direita, base;
-                    std::cout << "   [Recortar] -> Margem da ESQUERDA (X inicial): ";
-                    std::cin >> esquerda;
-                    std::cout << "   [Recortar] -> Margem do TOPO (Y inicial): ";
-                    std::cin >> topo;
-                    std::cout << "   [Recortar] -> Margem da DIREITA (X corte): ";
-                    std::cin >> direita;
-                    std::cout << "   [Recortar] -> Margem da BASE (Y corte): ";
-                    std::cin >> base;
-
-                    filtro.gama = largura - esquerda - direita;
-                    filtro.delta = altura - topo - base;
-                    processador.recorte(esquerda, topo);
-                }
-                else if (escolha == 3) { std::cout << "   [Granulação] -> Intensidade (0 a 100): "; std::cin >> filtro.alfa; }
-                else if (escolha == 4) { std::cout << "   [Nitidez] -> Fator multiplicador (0 a 100): "; std::cin >> filtro.alfa; }
-                else if (escolha == 5) { std::cout << "   [Desfocar] -> Dimensão do Kernel (Ímpar): "; std::cin >> filtro.gama; }
-                else if (escolha == 6) { std::cout << "   [Remover Falhas] -> Sensibilidade de detecção: "; std::cin >> filtro.alfa; }
-                else if (escolha == 7) { std::cout << "   [Reduzir Ruídos] -> Desvio padrão h (1.0 a 10.0): "; std::cin >> filtro.beta; }
-                else if (escolha == 8) { std::cout << "   [Brilho] -> Incremento alfa (0 a 100): "; std::cin >> filtro.alfa; }
-                else if (escolha == 9) { std::cout << "   [Contraste] -> Ganho alfa (0 a 100): "; std::cin >> filtro.alfa; }
-                else if (escolha == 10) {
-                    std::cout << "   [Alterar Cores] -> Escalar multiplicador: "; std::cin >> filtro.alfa;
-                    std::cout << "   [Alterar Cores] -> ID do Canal (1: B | 2: G | 3: R): "; std::cin >> filtro.gama;
-                }
-                else if (escolha == 11) { std::cout << "   [Escala de Cinzas] -> Peso da conversão (0 a 100): "; std::cin >> filtro.alfa; }
-                filtros.push_back(filtro);
-            }
-        }
-
-        std::string extensao = std::filesystem::path(entrada).extension().string();
-        for (auto& c : extensao) {
-            c = static_cast<char>(std::tolower(static_cast<unsigned char>(c)));
-        }
-
-        if (!camera && ValidarImagem(extensao)) {
-            processador.leitor.release();
-            processador.midia(entrada);
-
-            cv::Mat resultado = processador.render(sequencia, filtros);
-
-            if (!resultado.empty()) {
-                std::string nomeJanela = "Resultado Pro - Imagem";
-                cv::namedWindow(nomeJanela, cv::WINDOW_NORMAL);
-                cv::imshow(nomeJanela, resultado);
-
-                std::string destino = Renomear(pastaDestino, "resultado_pro", extensao);
-
-                if (cv::imwrite(destino, resultado)) {
-                    std::cout << "\n[SUCESSO] Imagem salva em: " << destino << std::endl;
-                } else {
-                    std::cerr << "\n[ERRO] Falha ao gravar o arquivo na pasta output/." << std::endl;
-                }
-
-                cv::waitKey(0);
-                cv::destroyWindow(nomeJanela);
-            } else {
-                std::cerr << "\n[ERRO] O processador gerou uma imagem vazia." << std::endl;
-            }
-        }
-        else {
-            cv::VideoWriter gravador;
-            std::string video = camera ? Renomear(pastaDestino, "resultado_pro_webcam", ".mp4") : Renomear(pastaDestino, "resultado_pro_video", ".mp4");
-            int codec = cv::VideoWriter::fourcc('m', 'p', '4', 'v');
-            bool pausado = false;
-
-            while (true) {
-                if (!pausado) {
-                    cv::Mat resultado = processador.render(sequencia, filtros);
-
-                    if (resultado.empty()) {
-                        if (camera) {
-                            cv::waitKey(10);
-                            continue;
-                        } else {
-                            break;
-                        }
-                    }
-
-                    if (!gravador.isOpened()) {
-                        gravador.open(video, codec, 30.0, resultado.size());
-                    }
-
-                    if (gravador.isOpened()) {
-                        gravador.write(resultado);
-                    }
-
-                    cv::namedWindow("Resultado Pro - Stream", cv::WINDOW_NORMAL);
-                    cv::imshow("Resultado Pro - Stream", resultado);
-                }
-
-                int tecla = cv::waitKey(30);
-                if (tecla == 'c' || tecla == 27) {
-                    break;
-                }
-                if (tecla == 'p') {
-                    pausado = !pausado;
-                }
-                if (tecla == 'r') {
-                    if (!camera) {
-                        processador.leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
-                        pausado = false;
-                    }
-                }
-            }
-
-            if (gravador.isOpened()) {
-                gravador.release();
-            }
-            cv::destroyWindow("Resultado Pro - Stream");
-        }
-    }
-
-    else if (modo == "demo") {
-        Render processador;
-        std::string entrada;
-        bool camera = false;
-        int largura = 0;
-        int altura = 0;
-
-        while (true) {
-            std::cout << "Informe o caminho da mídia (ou digite 'webcam' para a câmera): ";
-            std::cin >> entrada;
-
-            if (entrada == "webcam") {
-                processador.camera(0);
-                camera = true;
-                if (!processador.leitor.isOpened()) {
-                    std::cout << "Erro ao abrir a câmera. Tente novamente.\n" << std::endl;
-                    continue;
-                }
-
-                cv::Mat x;
-                for (int i = 0; i < 10; i++) {
-                    processador.leitor >> x;
-                    if (!x.empty()) {
-                        largura = x.cols;
-                        altura = x.rows;
-                        break;
-                    }
-                    cv::waitKey(30);
-                }
-                break;
-            } else {
-                processador.midia(entrada);
-                if (!processador.leitor.isOpened()) {
-                    std::cerr << "Erro! Não foi possível abrir o arquivo informado. Tente novamente.\n" << std::endl;
-                    continue;
-                }
-                cv::Mat x;
-                processador.leitor >> x;
-                if (!x.empty()) {
-                    largura = x.cols;
-                    altura = x.rows;
-                    processador.leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
-                }
-                break;
-            }
-        }
-
-        while (true) {
-            std::vector<int> sequencia;
-            std::vector<Parametros> filtros;
-            int escolha = -1;
-
-            Filtros();
-            std::cout << "Digite a sequência dos filtros para a demonstração (Digite 0 para iniciar | Digite -1 para SAIR do programa):" << std::endl;
-
-            bool sair = false;
-            while (true) {
-                std::cout << ">> Adicionar ao Demo: ";
-                std::cin >> escolha;
-                if (escolha == 0) break;
-                if (escolha == -1) {
-                    sair = true;
-                    break;
-                }
-
-                if (escolha > 0 && escolha <= 11) {
-                    sequencia.push_back(escolha);
-                    Parametros filtro = {1.0, 0.0f, 0, 0};
-
-                    processador.recorte(0, 0);
-
-                    if (escolha == 1) {
-                        std::cout << "   [Demo: Girar] -> Ângulo: ";
-                        std::cin >> filtro.alfa;
-                        std::cout << "   [Demo: Girar] -> Espelhamento: ";
-                        std::cin >> filtro.gama;
-                    }
-                    else if (escolha == 2) {
-                        int esquerda, topo, direita, base;
-                        std::cout << "   [Demo: Recortar] -> Borda Esquerda: ";
-                        std::cin >> esquerda;
-                        std::cout << "   [Demo: Recortar] -> Borda Topo: ";
-                        std::cin >> topo;
-                        std::cout << "   [Demo: Recortar] -> Borda Direita: ";
-                        std::cin >> direita;
-                        std::cout << "   [Demo: Recortar] -> Borda Base: ";
-                        std::cin >> base;
-
-                        filtro.gama = largura - esquerda - direita;
-                        filtro.delta = altura - topo - base;
-                        processador.recorte(esquerda, topo);
-                    }
-                    else if (escolha == 3) { std::cout << "   [Demo: Granulação] -> Intensidade: "; std::cin >> filtro.alfa; }
-                    else if (escolha == 4) { std::cout << "   [Demo: Nitidez] -> Intensidade: "; std::cin >> filtro.alfa; }
-                    else if (escolha == 5) { std::cout << "   [Demo: Desfocar] -> Kernel: "; std::cin >> filtro.gama; }
-                    else if (escolha == 6) { std::cout << "   [Demo: Remover Falhas] -> Sensibilidade: "; std::cin >> filtro.alfa; }
-                    else if (escolha == 7) { std::cout << "   [Demo: Reduzir Ruídos] -> Fator: "; std::cin >> filtro.beta; }
-                    else if (escolha == 8) { std::cout << "   [Demo: Brilho] -> Nível: "; std::cin >> filtro.alfa; }
-                    else if (escolha == 9) { std::cout << "   [Demo: Contraste] -> Nível: "; std::cin >> filtro.alfa; }
-                    else if (escolha == 10) {
-                        std::cout << "   [Demo: Cores] -> Multiplicador: "; std::cin >> filtro.alfa;
-                        std::cout << "   [Demo: Cores] -> Canal (1/2/3): "; std::cin >> filtro.gama;
-                    }
-                    else if (escolha == 11) { std::cout << "   [Demo: Cinzas] -> Mesclagem: "; std::cin >> filtro.alfa; }
-
-                    filtros.push_back(filtro);
-                }
-            }
-
-            if (sair) {
-                break;
-            }
-
-            if (sequencia.empty()) {
-                std::cout << "Nenhum filtro selecionado. Tente novamente.\n";
+                processador.janela();
                 continue;
             }
 
-            if (!camera) {
-                processador.leitor.set(cv::CAP_PROP_FRAME_WIDTH, largura);
-                processador.leitor.set(cv::CAP_PROP_FRAME_HEIGHT, altura);
-                processador.leitor.set(cv::CAP_PROP_POS_FRAMES, 0);
-            } else {
-                processador.leitor.set(cv::CAP_PROP_FRAME_WIDTH, largura);
-                processador.leitor.set(cv::CAP_PROP_FRAME_HEIGHT, altura);
+            if (opcao != 1) {
+                std::cout
+                    << "Opção inválida.\n";
+
+                continue;
             }
 
-            processador.comparar(sequencia, filtros);
+            const std::vector<std::string> arquivos =
+                SelecionarArquivos(true);
+
+            if (arquivos.empty()) {
+                std::cout
+                    << "Nenhum arquivo selecionado.\n";
+
+                continue;
+            }
+
+            int largura = 0;
+            int altura = 0;
+
+            if (
+                !AbrirArquivo(
+                    processador,
+                    arquivos.front(),
+                    largura,
+                    altura
+                )
+            ) {
+                std::cerr
+                    << "[ERRO] Não foi possível ler "
+                    << "o primeiro arquivo selecionado.\n";
+
+                continue;
+            }
+
+            Filtros();
+
+            int escolha;
+
+            std::cout
+                << ">> Escolha um filtro: ";
+
+            std::cin >> escolha;
+
+            if (
+                escolha < 1 ||
+                escolha > 11
+            ) {
+                std::cout
+                    << "Opção inválida.\n";
+
+                continue;
+            }
+
+            Parametros filtro;
+            DadosRecorte dadosRecorte;
+
+            if (
+                !LerParametros(
+                    processador,
+                    escolha,
+                    filtro,
+                    largura,
+                    altura,
+                    &dadosRecorte
+                )
+            ) {
+                continue;
+            }
+
+            for (const std::string& arquivo : arquivos) {
+                ProcessarArquivoFree(
+                    processador,
+                    arquivo,
+                    escolha,
+                    filtro,
+                    dadosRecorte,
+                    pastaDestino
+                );
+            }
+
+            std::cout
+                << "\nProcesso concluído. "
+                << "Deseja processar novamente? (s/n): ";
+
+            char repetir;
+            std::cin >> repetir;
+
+            if (
+                repetir != 's' &&
+                repetir != 'S'
+            ) {
+                break;
+            }
         }
     }
+    else if (modo == "pro") {
+        Render processador;
 
+        while (true) {
+            std::cout
+                << "\nMODO PRO\n";
+
+            std::cout
+                << "[1] Selecionar arquivo\n";
+
+            std::cout
+                << "[2] Usar webcam\n";
+
+            std::cout
+                << "[0] Sair\n";
+
+            std::cout
+                << "Escolha: ";
+
+            int fonte;
+            std::cin >> fonte;
+
+            if (fonte == 0) {
+                break;
+            }
+
+            const bool camera =
+                fonte == 2;
+
+            std::vector<std::string> arquivos;
+
+            int largura = 0;
+            int altura = 0;
+
+            if (camera) {
+                if (
+                    !AbrirWebcam(
+                        processador,
+                        largura,
+                        altura
+                    )
+                ) {
+                    std::cerr
+                        << "[ERRO] Não foi possível "
+                        << "acessar a webcam.\n";
+
+                    continue;
+                }
+            }
+            else if (fonte == 1) {
+                arquivos =
+                    SelecionarArquivos(false);
+
+                if (arquivos.empty()) {
+                    std::cout
+                        << "Nenhum arquivo selecionado.\n";
+
+                    continue;
+                }
+
+                if (
+                    !AbrirArquivo(
+                        processador,
+                        arquivos.front(),
+                        largura,
+                        altura
+                    )
+                ) {
+                    std::cerr
+                        << "[ERRO] Não foi possível "
+                        << "abrir a mídia.\n";
+
+                    continue;
+                }
+            }
+            else {
+                std::cout
+                    << "Opção inválida.\n";
+
+                continue;
+            }
+
+            std::vector<int> sequencia;
+            std::vector<Parametros> filtros;
+
+            if (
+                !MontarSequencia(
+                    processador,
+                    largura,
+                    altura,
+                    sequencia,
+                    filtros,
+                    true
+                )
+            ) {
+                break;
+            }
+
+            if (camera) {
+                RelatorioFiltros(
+                    "pro",
+                    "webcam",
+                    sequencia,
+                    filtros,
+                    pastaDestino
+                );
+
+                ProcessarWebcam(
+                    processador,
+                    sequencia,
+                    filtros,
+                    pastaDestino,
+                    "resultado_pro_webcam"
+                );
+            }
+            else {
+                RelatorioFiltros(
+                    "pro",
+                    arquivos.front(),
+                    sequencia,
+                    filtros,
+                    pastaDestino
+                );
+
+                ProcessarArquivo(
+                    processador,
+                    arquivos.front(),
+                    sequencia,
+                    filtros,
+                    pastaDestino,
+                    "resultado_pro"
+                );
+            }
+
+            std::cout
+                << "\nProcesso concluído. "
+                << "Deseja iniciar outro processo? (s/n): ";
+
+            char repetir;
+            std::cin >> repetir;
+
+            if (
+                repetir != 's' &&
+                repetir != 'S'
+            ) {
+                break;
+            }
+        }
+    }
+    else if (modo == "demo") {
+        Render processador;
+
+        while (true) {
+            std::cout
+                << "\nMODO DEMO\n";
+
+            std::cout
+                << "[1] Selecionar arquivo\n";
+
+            std::cout
+                << "[2] Usar webcam\n";
+
+            std::cout
+                << "[0] Sair\n";
+
+            std::cout
+                << "Escolha: ";
+
+            int fonte;
+            std::cin >> fonte;
+
+            if (fonte == 0) {
+                break;
+            }
+
+            const bool camera =
+                fonte == 2;
+
+            std::vector<std::string> arquivos;
+
+            int largura = 0;
+            int altura = 0;
+
+            if (camera) {
+                if (
+                    !AbrirWebcam(
+                        processador,
+                        largura,
+                        altura
+                    )
+                ) {
+                    std::cerr
+                        << "[ERRO] Não foi possível "
+                        << "acessar a webcam.\n";
+
+                    continue;
+                }
+            }
+            else if (fonte == 1) {
+                arquivos =
+                    SelecionarArquivos(false);
+
+                if (arquivos.empty()) {
+                    std::cout
+                        << "Nenhum arquivo selecionado.\n";
+
+                    continue;
+                }
+
+                if (
+                    !AbrirArquivo(
+                        processador,
+                        arquivos.front(),
+                        largura,
+                        altura
+                    )
+                ) {
+                    std::cerr
+                        << "[ERRO] Não foi possível "
+                        << "abrir a mídia.\n";
+
+                    continue;
+                }
+            }
+            else {
+                std::cout
+                    << "Opção inválida.\n";
+
+                continue;
+            }
+
+            std::vector<int> sequencia;
+            std::vector<Parametros> filtros;
+
+            if (
+                !MontarSequencia(
+                    processador,
+                    largura,
+                    altura,
+                    sequencia,
+                    filtros,
+                    true
+                )
+            ) {
+                break;
+            }
+
+            processador.comparar(
+                sequencia,
+                filtros
+            );
+
+            RelatorioFiltros(
+                "demo",
+                camera
+                    ? "webcam"
+                    : arquivos.front(),
+                processador.filtrosUsados(),
+                processador.parametrosUsados(),
+                pastaDestino
+            );
+
+            std::cout
+                << "\nDemonstração concluída. "
+                << "Deseja iniciar outra? (s/n): ";
+
+            char repetir;
+            std::cin >> repetir;
+
+            if (
+                repetir != 's' &&
+                repetir != 'S'
+            ) {
+                break;
+            }
+        }
+    }
     else {
         Manual();
         return 1;
