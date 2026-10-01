@@ -486,6 +486,169 @@ cv::Mat Render::comparar(
                 break;
             }
 
+            const char* nomeFiltro = "Filtro: nenhum";
+            const char* descricaoFiltro = "Sem filtros aplicados.";
+
+            if (!sequencia.empty()) {
+                switch (sequencia[filtroAtual]) {
+                case 1:
+                    nomeFiltro = "Filtro: Girar";
+                    descricaoFiltro = "Rotacao e espelhamento da imagem.";
+                    break;
+
+                case 2:
+                    nomeFiltro = "Filtro: Recortar";
+                    descricaoFiltro = "Remove areas das bordas da imagem.";
+                    break;
+
+                case 3:
+                    nomeFiltro = "Filtro: Granular";
+                    descricaoFiltro = "Adiciona granulos preservando bordas detectadas.";
+                    break;
+
+                case 4:
+                    nomeFiltro = "Filtro: Nitidez";
+                    descricaoFiltro = "Realca detalhes sem aplicar nitidez nas bordas protegidas.";
+                    break;
+
+                case 5:
+                    nomeFiltro = "Filtro: Desfocar";
+                    descricaoFiltro = "Suaviza a imagem preservando bordas protegidas.";
+                    break;
+
+                case 6:
+                    nomeFiltro = "Filtro: Remover";
+                    descricaoFiltro = "Detecta e tenta remover pequenas falhas.";
+                    break;
+
+                case 7:
+                    nomeFiltro = "Filtro: Limpar";
+                    descricaoFiltro = "Reduz ruido preservando detalhes.";
+                    break;
+
+                case 8:
+                    nomeFiltro = "Filtro: Brilho";
+                    descricaoFiltro = "Ajusta a luminosidade da imagem.";
+                    break;
+
+                case 9:
+                    nomeFiltro = "Filtro: Contraste";
+                    descricaoFiltro = "Ajusta a diferenca entre tons claros e escuros.";
+                    break;
+
+                case 10:
+                    nomeFiltro = "Filtro: Cores";
+                    descricaoFiltro = "Ajusta a intensidade de um canal de cor.";
+                    break;
+
+                case 11:
+                    nomeFiltro = "Filtro: Saturacao";
+                    descricaoFiltro = "Controla a intensidade das cores.";
+                    break;
+                }
+            }
+
+            const int alturaPainel = 150;
+
+            cv::Mat painel(
+                resultado.rows + alturaPainel,
+                resultado.cols,
+                resultado.type(),
+                cv::Scalar(35, 35, 35)
+            );
+
+            resultado.copyTo(
+                painel(
+                    cv::Rect(
+                        0,
+                        0,
+                        resultado.cols,
+                        resultado.rows
+                    )
+                )
+            );
+
+            const int colunaMeio =
+                resultado.cols / 2;
+
+            cv::putText(
+                painel,
+                "IMAGEM ORIGINAL",
+                cv::Point(
+                    std::max(10, colunaMeio / 2 - 100),
+                    resultado.rows + 28
+                ),
+                cv::FONT_HERSHEY_SIMPLEX,
+                0.65,
+                cv::Scalar(255, 255, 255),
+                2
+            );
+
+            cv::putText(
+                painel,
+                "IMAGEM PROCESSADA",
+                cv::Point(
+                    colunaMeio + 20,
+                    resultado.rows + 28
+                ),
+                cv::FONT_HERSHEY_SIMPLEX,
+                0.65,
+                cv::Scalar(255, 255, 255),
+                2
+            );
+
+            cv::putText(
+                painel,
+                nomeFiltro,
+                cv::Point(
+                    15,
+                    resultado.rows + 58
+                ),
+                cv::FONT_HERSHEY_SIMPLEX,
+                0.55,
+                cv::Scalar(255, 255, 255),
+                1
+            );
+
+            cv::putText(
+                painel,
+                descricaoFiltro,
+                cv::Point(
+                    15,
+                    resultado.rows + 82
+                ),
+                cv::FONT_HERSHEY_SIMPLEX,
+                0.48,
+                cv::Scalar(220, 220, 220),
+                1
+            );
+
+            cv::putText(
+                painel,
+                "[/] [*] filtro   [T] parametro   [+] [-] ajustar",
+                cv::Point(
+                    15,
+                    resultado.rows + 106
+                ),
+                cv::FONT_HERSHEY_SIMPLEX,
+                0.48,
+                cv::Scalar(220, 220, 220),
+                1
+            );
+
+            cv::putText(
+                painel,
+                "[Z] desfazer   [P] pausar   [R] reiniciar   [C] ou [ESC] sair",
+                cv::Point(
+                    15,
+                    resultado.rows + 130
+                ),
+                cv::FONT_HERSHEY_SIMPLEX,
+                0.48,
+                cv::Scalar(220, 220, 220),
+                1
+            );
+
             const int telaLargura =
                 GetSystemMetrics(
                     SM_CXSCREEN
@@ -517,7 +680,7 @@ cv::Mat Render::comparar(
                     larguraMaxima
                 ) /
                 static_cast<double>(
-                    resultado.cols
+                    painel.cols
                 );
 
             const double escalaAltura =
@@ -525,7 +688,7 @@ cv::Mat Render::comparar(
                     alturaMaxima
                 ) /
                 static_cast<double>(
-                    resultado.rows
+                    painel.rows
                 );
 
             const double escala =
@@ -538,7 +701,7 @@ cv::Mat Render::comparar(
 
             if (escala < 1.0) {
                 cv::resize(
-                    resultado,
+                    painel,
                     exibicao,
                     cv::Size(),
                     escala,
@@ -547,7 +710,7 @@ cv::Mat Render::comparar(
                 );
             }
             else {
-                exibicao = resultado;
+                exibicao = painel;
             }
 
             cv::resizeWindow(
