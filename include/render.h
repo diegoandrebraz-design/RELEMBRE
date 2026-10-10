@@ -13,106 +13,60 @@ struct Parametros {
 };
 
 class Render {
-
 public:
     Render();
+    ~Render();
 
-    cv::Mat render(
-        int escolha,
-        const Parametros& filtro
-    );
+    cv::Mat render(int escolha, const Parametros& filtro);
 
-    cv::Mat render(
-        const std::vector<int>& escolhas,
-        const std::vector<Parametros>& filtro
-    );
+    cv::Mat render(const std::vector<int>& escolhas, const std::vector<Parametros>& filtro);
 
-    cv::Mat comparar(
-        const std::vector<int>& escolhas,
-        const std::vector<Parametros>& filtro
-    );
-
-    cv::VideoCapture leitor;
+    cv::Mat comparar(const std::vector<int>& escolhas, const std::vector<Parametros>& filtro);
 
     void camera(int dispositivo);
     void midia(const std::string& arquivo);
     void recorte(int x, int y);
     void janela();
 
-    ~Render();
+    cv::VideoCapture leitor;
 
 private:
     cv::Mat imagem;
     cv::Mat resultado;
+    cv::Mat frameAnterior;
+
     cv::VideoWriter gravador;
 
-    cv::Mat frameAnterior;
     cv::Rect regiaoAnterior;
 
     int esquerda = 0;
     int topo = 0;
 
-    bool borda = true;
-    int limite = 100;
-    double desvio = 10.0;
+    bool borda = false;
+    int limite = 0;
+    double desvio = 0.0;
 
-    cv::Mat girar(
-        const cv::Mat& arquivo,
-        double alfa,
-        int gama
-    );
+    static cv::Mat girar(const cv::Mat& arquivo, double alfa, int gama);
 
-    cv::Mat recortar(
-        const cv::Mat& arquivo,
-        int gama,
-        int delta
-    );
+    cv::Mat recortar(const cv::Mat& arquivo, int gama, int delta);
 
-    cv::Mat granular(
-        const cv::Mat& arquivo,
-        double alfa
-    );
+    cv::Mat granular(const cv::Mat& arquivo, double alfa);
 
-    cv::Mat nitidez(
-        const cv::Mat& arquivo,
-        double alfa
-    );
+    cv::Mat nitidez(const cv::Mat& arquivo, double alfa);
 
-    cv::Mat desfocar(
-        const cv::Mat& arquivo,
-        int gama
-    );
+    cv::Mat desfocar(const cv::Mat& arquivo, int gama);
 
-    static cv::Mat remover(
-        const cv::Mat& arquivo,
-        double alfa
-    );
+    cv::Mat remover(const cv::Mat& arquivo, double alfa);
 
-    cv::Mat limpar(
-        const cv::Mat& arquivo,
-        float beta
-    );
+    cv::Mat limpar(const cv::Mat& arquivo, float beta);
 
-    cv::Mat brilho(
-        const cv::Mat& arquivo,
-        double alfa
-    );
+    cv::Mat brilho(const cv::Mat& arquivo, double alfa);
 
-    cv::Mat contraste(
-        const cv::Mat& arquivo,
-        double alfa
-    );
+    cv::Mat contraste(const cv::Mat& arquivo, double alfa);
 
-    cv::Mat cores(
-        const cv::Mat& arquivo,
-        double alfa,
-        int gama
-    );
+    cv::Mat cores(const cv::Mat& arquivo, double alfa, int gama);
 
-    cv::Mat cinzas(
-        const cv::Mat& arquivo,
-        double alfa
-    );
+    cv::Mat cinzas(const cv::Mat& arquivo, double alfa);
 };
 
 #endif

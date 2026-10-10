@@ -158,8 +158,6 @@ bool LerParametros(
 ) {
     filtro = {1.0, 0.0f, 0, 0};
 
-    processador.recorte(0, 0);
-
     if (dadosRecorte) {
         *dadosRecorte = {};
     }
@@ -308,6 +306,8 @@ bool MontarSequencia(
 ) {
     sequencia.clear();
     filtros.clear();
+
+    processador.recorte(0, 0);
 
     Filtros();
 
@@ -1031,6 +1031,8 @@ int main(int argc, char* argv[]) {
             Parametros filtro;
             DadosRecorte dadosRecorte;
 
+            processador.recorte(0, 0);
+
             if (
                 !LerParametros(
                     processador,
@@ -1327,8 +1329,8 @@ int main(int argc, char* argv[]) {
                 camera
                     ? "webcam"
                     : arquivos.front(),
-                processador.filtrosUsados(),
-                processador.parametrosUsados(),
+                sequencia,
+                filtros,
                 pastaDestino
             );
 
