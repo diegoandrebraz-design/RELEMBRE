@@ -141,7 +141,12 @@ std::vector<std::string> SelecionarArquivos(bool multiplos) {
 
     while (*cursor) {
         const std::string nome = cursor;
-        arquivos.push_back(pasta + "\\" + nome);
+
+        std::string caminho = pasta;
+        caminho.append("\\");
+        caminho.append(nome);
+
+        arquivos.push_back(std::move(caminho));
         cursor += nome.size() + 1;
     }
 
